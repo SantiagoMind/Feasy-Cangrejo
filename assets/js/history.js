@@ -1,4 +1,4 @@
-export function initHistory({ selector, renderFields, getCurrentFields, setCurrentFields, onSnapshotChange }) {
+export function initHistory({ selector, renderFields, getCurrentFields, setCurrentFields }) {
     const undoBtn = document.getElementById('feasy-undo');
     const redoBtn = document.getElementById('feasy-redo');
     let history = [];
@@ -18,38 +18,22 @@ export function initHistory({ selector, renderFields, getCurrentFields, setCurre
         updateButtons();
     }
 
-    // ? Guardar snapshot manualmente desde fuera
-    window.feasySaveSnapshot = saveSnapshot;
-
     undoBtn.addEventListener('click', () => {
         if (idx > 0) {
             idx--;
-            window.__feasyHistoryRestore = true; // ? Flag para evitar snapshot automático
             setCurrentFields(history[idx]);
             updateButtons();
-            localStorage.setItem(`feasy_history_${selector.value}`, JSON.stringify({ history, idx }));
-            if (typeof onSnapshotChange === 'function') {
-                onSnapshotChange('undo');
-            }
         }
     });
-
     redoBtn.addEventListener('click', () => {
         if (idx < history.length - 1) {
             idx++;
-            window.__feasyHistoryRestore = true; // ? Agregado para evitar snapshot tras Redo
             setCurrentFields(history[idx]);
             updateButtons();
-
-            // ? Mantener sincronizado el índice
-            localStorage.setItem(`feasy_history_${selector.value}`, JSON.stringify({ history, idx }));
-
-            if (typeof onSnapshotChange === 'function') {
-                onSnapshotChange('redo');
-            }
         }
     });
 
+    // Al cambiar de formulario:
     selector.addEventListener('change', () => {
         const saved = localStorage.getItem(`feasy_history_${selector.value}`);
         if (saved) {
@@ -63,4 +47,11 @@ export function initHistory({ selector, renderFields, getCurrentFields, setCurre
         }
         updateButtons();
     });
+
+    // Cada vez que renderFields() termine, toma snapshot
+    const originalRender = renderFields;
+    renderFields = () => {
+        originalRender();
+        saveSnapshot();
+    };
 }

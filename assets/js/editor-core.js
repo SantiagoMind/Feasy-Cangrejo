@@ -19,11 +19,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Mostrar bloque de creación si selecciona "Crear nuevo formulario..."
         if (selected === 'create_new') {
-            if (newFormGroup) newFormGroup.style.display = 'block';
+            if (newFormGroup) newFormGroup.classList.remove('hidden');
             if (container) container.style.display = 'none';
             return;
         } else {
-            if (newFormGroup) newFormGroup.style.display = 'none';
+            if (newFormGroup) newFormGroup.classList.add('hidden');
         }
 
         // Cargar formulario existente
@@ -42,30 +42,8 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    // 1) Carga de campos y renderizado
                     window.currentFields = data.data.fields ?? (data.data.data?.fields ?? []);
                     renderFields();
-
-                    // 2) Snapshot inicial
-                    if (typeof window.feasySaveSnapshot === 'function' && !window.__feasyHistoryRestore) {
-                        window.feasySaveSnapshot();
-                    }
-
-                    // ? Resetear la bandera tras restaurar
-                    window.__feasyHistoryRestore = false;
-
-                    // 3) Única llamada a initHistory
-                    initHistory({
-                        selector,
-                        renderFields,
-                        getCurrentFields: () => window.currentFields,
-                        setCurrentFields: f => {
-                            window.currentFields = f;
-                            renderFields();
-                        },
-                        onSnapshotChange: () => autosave('high')
-                    });
-
                 } else {
                     fieldsDiv.innerHTML = '<p style="color:red;">? Error loading form.</p>';
                 }
@@ -225,13 +203,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const updatedFields = collectValidFields();
         if (!updatedFields) return;
 
-        // ———————— Sincronizar snapshot en el historial ————————
-        window.currentFields = updatedFields;
-        if (typeof window.feasySaveSnapshot === 'function') {
-            window.feasySaveSnapshot();
-        }
-        // ————————————————————————————————————————————————
-
         isSaving = true;
         pendingSave = false;
         lastSaveTime = now;
@@ -352,55 +323,16 @@ document.addEventListener('DOMContentLoaded', function () {
             fieldsDiv.appendChild(wrapper);
 
             // ?? Agregar listeners para autoguardado
-            wrapper.querySelector('.field-name')?.addEventListener('input', () => {
-                if (typeof window.feasySaveSnapshot === 'function') {
-                    window.feasySaveSnapshot();
-                }
-                debouncedAutosave();
-            });
-
-            wrapper.querySelector('.field-type')?.addEventListener('change', () => {
-                if (typeof window.feasySaveSnapshot === 'function') {
-                    window.feasySaveSnapshot();
-                }
-                autosave('medium');
-            });
-
-            wrapper.querySelector('.field-options')?.addEventListener('input', () => {
-                if (typeof window.feasySaveSnapshot === 'function') {
-                    window.feasySaveSnapshot();
-                }
-                debouncedAutosave();
-            });
-
-            wrapper.querySelector('.field-conditional-field')?.addEventListener('input', () => {
-                if (typeof window.feasySaveSnapshot === 'function') {
-                    window.feasySaveSnapshot();
-                }
-                debouncedAutosave();
-            });
-
-            wrapper.querySelector('.field-conditional-value')?.addEventListener('input', () => {
-                if (typeof window.feasySaveSnapshot === 'function') {
-                    window.feasySaveSnapshot();
-                }
-                debouncedAutosave();
-            });
-
-            wrapper.querySelector('.field-conditional-type')?.addEventListener('change', () => {
-                if (typeof window.feasySaveSnapshot === 'function') {
-                    window.feasySaveSnapshot();
-                }
-                autosave('medium');
-            });
+            wrapper.querySelector('.field-name')?.addEventListener('input', debouncedAutosave);
+            wrapper.querySelector('.field-label')?.addEventListener('input', debouncedAutosave);
+            wrapper.querySelector('.field-type')?.addEventListener('change', () => autosave('medium'));
+            wrapper.querySelector('.field-options')?.addEventListener('input', debouncedAutosave);
+            wrapper.querySelector('.field-conditional-field')?.addEventListener('input', debouncedAutosave);
+            wrapper.querySelector('.field-conditional-value')?.addEventListener('input', debouncedAutosave);
+            wrapper.querySelector('.field-conditional-type')?.addEventListener('change', () => autosave('medium'));
         });
 
         activateValidation();
-
-        // ?? Guardar snapshot en el historial
-        if (typeof window.feasySaveSnapshot === 'function') {
-            window.feasySaveSnapshot();
-        }
     }
 
     function activateValidation() {
@@ -573,6 +505,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     alert('? Failed to clear history.');
                 }
             });
+    });
+
+    initHistory({
+        selector,
+        renderFields,
+        getCurrentFields: () => window.currentFields,
+        setCurrentFields: fields => {
+            window.currentFields = fields;
+            renderFields();
+        }
     });
     window.addEventListener('beforeunload', () => {
         autosave('high');

@@ -331,3 +331,22 @@
     border-color: #0073aa;
     outline: none;
 }
+
+.feasy-new-form-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 1em;
+    padding-top: 0.5em;
+}
+
+    .feasy-new-form-group input {
+        padding: 6px 8px;
+        font-size: 14px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+
+    .feasy-new-form-group.hidden {
+        display: none !important;
+    }

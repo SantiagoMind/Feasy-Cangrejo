@@ -109,20 +109,19 @@ add_action('admin_enqueue_scripts', function () {
             true
         );
 
-        // History (undo/redo)
-        wp_enqueue_script(
-            'feasy-editor-history',
-            plugin_dir_url(__FILE__) . 'assets/js/history.js',
-            ['feasy-editor-core'],
-            filemtime(plugin_dir_path(__FILE__) . 'assets/js/history.js'),
-            true
-        );
-
         wp_enqueue_script(
             'feasy-editor-core',
             plugin_dir_url(__FILE__) . 'assets/js/editor-core.js',
             ['sortablejs'],
             filemtime(plugin_dir_path(__FILE__) . 'assets/js/editor-core.js'),
+            true
+        );
+
+        wp_enqueue_script(
+            'feasy-editor-history',
+            plugin_dir_url(__FILE__) . 'assets/js/history.js',
+            ['feasy-editor-core'],
+            filemtime(plugin_dir_path(__FILE__) . 'assets/js/history.js'),
             true
         );
 
