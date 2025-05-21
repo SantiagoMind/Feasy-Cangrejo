@@ -1,4 +1,4 @@
-export function initHistory({ selector, renderFields, getCurrentFields, setCurrentFields }) {
+export function initHistory({ selector, getCurrentFields, setCurrentFields }) {
     const undoBtn = document.getElementById('feasy-undo');
     const redoBtn = document.getElementById('feasy-redo');
     let history = [];
@@ -34,24 +34,27 @@ export function initHistory({ selector, renderFields, getCurrentFields, setCurre
     });
 
     // Al cambiar de formulario:
-    selector.addEventListener('change', () => {
+    function loadHistory() {
         const saved = localStorage.getItem(`feasy_history_${selector.value}`);
+        let loaded = false;
         if (saved) {
             const obj = JSON.parse(saved);
             history = obj.history;
             idx = obj.idx;
-            setCurrentFields(history[idx]);
+            if (history[idx]) {
+                setCurrentFields(history[idx]);
+                loaded = true;
+            }
         } else {
             history = [];
             idx = -1;
         }
         updateButtons();
-    });
+        return loaded;
+    }
 
-    // Cada vez que renderFields() termine, toma snapshot
-    const originalRender = renderFields;
-    renderFields = () => {
-        originalRender();
-        saveSnapshot();
+    return {
+        saveSnapshot,
+        loadHistory
     };
 }

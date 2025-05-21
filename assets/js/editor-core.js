@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const createBtn = document.getElementById('feasy-create-form');
     const newFormInput = document.getElementById('feasy-new-form-name');
     const newFormGroup = document.getElementById('feasy-new-form-group'); // <== ESTE BLOQUE ES EL CONTENEDOR OCULTO
+    let historyManager;
 
     selector.addEventListener('change', () => {
         const selected = selector.value;
@@ -44,6 +45,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.success) {
                     window.currentFields = data.data.fields ?? (data.data.data?.fields ?? []);
                     renderFields();
+                    if (historyManager) {
+                        const loaded = historyManager.loadHistory();
+                        if (!loaded) historyManager.saveSnapshot();
+                    }
                 } else {
                     fieldsDiv.innerHTML = '<p style="color:red;">? Error loading form.</p>';
                 }
@@ -257,6 +262,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const updatedFields = collectValidFields();
         if (!updatedFields) return;
+        window.currentFields = updatedFields;
+        historyManager?.saveSnapshot();
 
         isSaving = true;
         pendingSave = false;
@@ -561,9 +568,8 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     });
 
-    initHistory({
+    historyManager = initHistory({
         selector,
-        renderFields,
         getCurrentFields: () => window.currentFields,
         setCurrentFields: fields => {
             window.currentFields = fields;
