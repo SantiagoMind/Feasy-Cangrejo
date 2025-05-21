@@ -260,11 +260,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (priority === 'low' && (now - lastSaveTime < MIN_INTERVAL)) return;
 
-        const updatedFields = collectValidFields();
-        if (!updatedFields) return;
+        const validFields = collectValidFields();
+        const updatedFields = validFields || collectAllFields();
         window.currentFields = updatedFields;
         historyManager?.saveSnapshot();
-
+        if (!validFields) return;
         isSaving = true;
         pendingSave = false;
         lastSaveTime = now;
