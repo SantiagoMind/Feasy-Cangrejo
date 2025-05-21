@@ -20,7 +20,7 @@
     </div>
 
     <!-- Este bloque estará oculto por defecto y solo se mostrará cuando el usuario seleccione "crear nuevo formulario" -->
-    <div id="feasy-new-form-group" class="feasy-new-form-row hidden">
+    <div id="feasy-new-form-group" class="feasy-new-form-group hidden">
         <input type="text" id="feasy-new-form-name" placeholder="ej: sip_f_105" style="padding: 6px 8px; font-size: 14px; border-radius: 4px; border: 1px solid #ccc;">
         <button id="feasy-create-form" class="button">
             <img src="<?php echo esc_url( plugins_url('../assets/icons/add-field.svg', __FILE__) ); ?>" width="16" style="vertical-align: middle; margin-right: 4px;">
