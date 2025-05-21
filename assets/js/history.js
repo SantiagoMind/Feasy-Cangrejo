@@ -4,6 +4,13 @@ export function initHistory({ selector, getCurrentFields, setCurrentFields }) {
     let history = [];
     let idx = -1;
 
+    function persist() {
+        localStorage.setItem(
+            `feasy_history_${selector.value}`,
+            JSON.stringify({ history, idx })
+        );
+    }
+
     function updateButtons() {
         undoBtn.disabled = idx <= 0;
         redoBtn.disabled = idx >= history.length - 1;
@@ -11,24 +18,27 @@ export function initHistory({ selector, getCurrentFields, setCurrentFields }) {
 
     function saveSnapshot() {
         const clone = JSON.parse(JSON.stringify(getCurrentFields()));
+        const entry = { fields: clone, timestamp: Date.now() };
         history = history.slice(0, idx + 1);
-        history.push(clone);
+        history.push(entry);
         idx = history.length - 1;
-        localStorage.setItem(`feasy_history_${selector.value}`, JSON.stringify({ history, idx }));
+        persist();
         updateButtons();
     }
 
     undoBtn.addEventListener('click', () => {
         if (idx > 0) {
             idx--;
-            setCurrentFields(history[idx]);
+            const entry = history[idx];
+            setCurrentFields(entry.fields ?? entry);
             updateButtons();
         }
     });
     redoBtn.addEventListener('click', () => {
         if (idx < history.length - 1) {
             idx++;
-            setCurrentFields(history[idx]);
+            const entry = history[idx];
+            setCurrentFields(entry.fields ?? entry);
             updateButtons();
         }
     });
@@ -39,10 +49,11 @@ export function initHistory({ selector, getCurrentFields, setCurrentFields }) {
         let loaded = false;
         if (saved) {
             const obj = JSON.parse(saved);
-            history = obj.history;
-            idx = obj.idx;
-            if (history[idx]) {
-                setCurrentFields(history[idx]);
+            history = obj.history || [];
+            idx = typeof obj.idx === 'number' ? obj.idx : history.length - 1;
+            const entry = history[idx];
+            if (entry) {
+                setCurrentFields(entry.fields ?? entry);
                 loaded = true;
             }
         } else {
@@ -52,9 +63,24 @@ export function initHistory({ selector, getCurrentFields, setCurrentFields }) {
         updateButtons();
         return loaded;
     }
+    function getHistory() {
+        return history;
+    }
+
+    function restoreSnapshot(i) {
+        if (history[i]) {
+            idx = i;
+            const entry = history[i];
+            setCurrentFields(entry.fields ?? entry);
+            persist();
+            updateButtons();
+        }
+    }
 
     return {
         saveSnapshot,
-        loadHistory
+        loadHistory,
+        getHistory,
+        restoreSnapshot
     };
 }

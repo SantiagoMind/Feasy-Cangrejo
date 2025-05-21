@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const addFieldBtn = document.getElementById('feasy-add-field');
     const saveBtn = document.getElementById('feasy-save-form-visual');
     const clearHistoryBtn = document.getElementById('feasy-clear-history');
+    const showHistoryBtn = document.getElementById("feasy-show-history");
+    const historyModal = document.getElementById("feasy-history-modal");
+    const historyList = document.getElementById("feasy-history-list");
+    const historyClose = document.querySelector(".feasy-history-close");
 
     const createBtn = document.getElementById('feasy-create-form');
     const newFormInput = document.getElementById('feasy-new-form-name');
@@ -567,6 +571,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
     });
+
+    showHistoryBtn?.addEventListener('click', () => {
+        if (!historyModal) return;
+        const list = historyManager?.getHistory() || [];
+        historyList.innerHTML = '';
+        list.forEach((h, i) => {
+            const li = document.createElement('li');
+            const d = new Date(h.timestamp || Date.now());
+            li.textContent = d.toLocaleString();
+            li.addEventListener('click', () => {
+                historyManager.restoreSnapshot(i);
+                historyModal.classList.remove('open');
+            });
+            historyList.appendChild(li);
+        });
+        historyModal.classList.add('open');
+    });
+    historyClose?.addEventListener('click', () => historyModal.classList.remove('open'));
+    historyModal?.addEventListener('click', e => { if (e.target === historyModal) historyModal.classList.remove('open'); });
 
     historyManager = initHistory({
         selector,

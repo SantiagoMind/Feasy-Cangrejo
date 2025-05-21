@@ -46,6 +46,14 @@
         <div class="feasy-history-controls" style="margin-bottom: 1em;">
             <button id="feasy-undo" class="button" disabled>⏪ Undo</button>
             <button id="feasy-redo" class="button" disabled>⏩ Redo</button>
+            <button id="feasy-show-history" class="button">📜 Historial</button>
+        </div>
+
+        <div id="feasy-history-modal" class="feasy-history-modal">
+            <div class="feasy-history-inner">
+                <button type="button" class="feasy-history-close">✖️</button>
+                <ul id="feasy-history-list"></ul>
+            </div>
         </div>
 
         <button id="feasy-add-field" class="button">
