@@ -64,9 +64,9 @@
     </div>
 </div>
 
-<script>
+<script type="module">
 // Editor core logic
-import { initHistory } from './history.js';
+import { initHistory } from '<?php echo esc_url( plugins_url('../assets/js/history.js', __FILE__) ); ?>';
 
 document.addEventListener('DOMContentLoaded', function() {
     const iconBase    = feasy_globals.plugin_url + 'assets/icons/';
