@@ -484,12 +484,9 @@ document.addEventListener('DOMContentLoaded', function () {
         animation: 150,
         handle: '.drag-handle',
         onEnd(evt) {
-            const fields = collectValidFields() || collectAllFields();
-            window.currentFields = fields;
-            const moved = window.currentFields.splice(evt.oldIndex, 1)[0];
-            window.currentFields.splice(evt.newIndex, 0, moved);
+            window.currentFields = collectValidFields() || collectAllFields();
             renderFields();
-            autosave("high");
+            autosave('high');
         }
     });
 
