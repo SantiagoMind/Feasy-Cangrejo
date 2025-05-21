@@ -189,6 +189,61 @@ document.addEventListener('DOMContentLoaded', function () {
         return hasErrors ? null : updatedFields;
     }
 
+    // Collect fields without validation, preserving current input values
+    function collectAllFields() {
+        const updatedFields = [];
+        const requiredOptionTypes = ['radio', 'select', 'checkbox_single'];
+
+        document.querySelectorAll('.field-wrapper').forEach(row => {
+            const name = row.querySelector('.field-name').value.trim();
+            const label = row.querySelector('.field-label').value.trim();
+            const type = row.querySelector('.field-type').value;
+            const condField = row.querySelector('.field-conditional-field').value.trim();
+            const condValue = row.querySelector('.field-conditional-value').value.trim();
+            const condType = row.querySelector('.field-conditional-type').value;
+
+            const field = { name, label, type };
+
+            if (requiredOptionTypes.includes(type)) {
+                const optionsText = row.querySelector('.field-options')?.value.trim() || '';
+                const optionsArray = optionsText.split('\\n').filter(opt => opt.trim() !== '');
+
+                let isDynamic = false;
+                let dynamicConfig = null;
+
+                try {
+                    const wrapper = row.closest('.field-wrapper');
+                    const dynamicAttr = wrapper?.getAttribute('data-dynamic');
+                    if (dynamicAttr) {
+                        dynamicConfig = JSON.parse(dynamicAttr);
+                        isDynamic = !!dynamicConfig.endpoint;
+                    }
+                } catch (err) {
+                    console.warn('Error al interpretar dynamic data', err);
+                }
+
+                if (!isDynamic && optionsArray.length > 0) {
+                    field.options = {};
+                    optionsArray.forEach(opt => {
+                        field.options[opt] = opt;
+                    });
+                }
+
+                if (isDynamic) {
+                    field.dynamic = dynamicConfig;
+                }
+            }
+
+            if (condField && condValue && condType) {
+                field.conditional = { field: condField, value: condValue, type: condType };
+            }
+
+            updatedFields.push(field);
+        });
+
+        return updatedFields;
+    }
+
     function autosave(priority = 'medium') {
         const now = Date.now();
         const MIN_INTERVAL = 3000;
@@ -429,10 +484,12 @@ document.addEventListener('DOMContentLoaded', function () {
         animation: 150,
         handle: '.drag-handle',
         onEnd(evt) {
+            const fields = collectValidFields() || collectAllFields();
+            window.currentFields = fields;
             const moved = window.currentFields.splice(evt.oldIndex, 1)[0];
             window.currentFields.splice(evt.newIndex, 0, moved);
             renderFields();
-            autosave('high');
+            autosave("high");
         }
     });
 
