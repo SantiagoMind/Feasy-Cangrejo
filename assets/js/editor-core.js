@@ -565,6 +565,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(r => r.json())
             .then(res => {
                 if (res.success && res.data?.clear_key) {
+                    localStorage.removeItem(res.data.clear_key);
                     alert('? History cleared.');
                 } else {
                     alert('? Failed to clear history.');

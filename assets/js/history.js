@@ -50,6 +50,9 @@ export function initHistory({ selector, getCurrentFields, setCurrentFields, pers
 
     // Al cambiar de formulario:
     function loadHistory() {
+        if (!persistHistory) {
+            localStorage.removeItem(`feasy_history_${selector.value}`);
+        }
         const saved = persistHistory
             ? localStorage.getItem(`feasy_history_${selector.value}`)
             : null;
