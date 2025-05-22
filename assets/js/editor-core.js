@@ -581,6 +581,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const li = document.createElement('li');
             const d = new Date(h.timestamp || Date.now());
             li.textContent = d.toLocaleString();
+            if (h.description) {
+                li.textContent += " - " + h.description;
+            }
+            if (h.description) {
+                li.textContent += " - " + h.description;
+            }
             li.addEventListener('click', () => {
                 historyManager.restoreSnapshot(i);
                 historyModal.classList.remove('open');

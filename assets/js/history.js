@@ -21,9 +21,33 @@ export function initHistory({ selector, getCurrentFields, setCurrentFields, pers
         redoBtn.disabled = idx >= history.length - 1;
     }
 
+    function describeChange(prevFields, newFields) {
+        if (!prevFields) return 'Estado inicial';
+
+        if (newFields.length > prevFields.length) {
+            return 'Campo agregado';
+        }
+        if (newFields.length < prevFields.length) {
+            return 'Campo eliminado';
+        }
+
+        const sameOrder = newFields.every((f, i) => f.name === (prevFields[i] || {}).name);
+        const sameContent = newFields.every((f, i) => JSON.stringify(f) === JSON.stringify(prevFields[i]));
+
+        if (!sameOrder) return 'Campos reordenados';
+        if (!sameContent) return 'Campo modificado';
+
+        return 'Sin cambios';
+    }
+
     function saveSnapshot() {
         const clone = JSON.parse(JSON.stringify(getCurrentFields()));
-        const entry = { fields: clone, timestamp: Date.now() };
+        const prev = history[idx] ? (history[idx].fields ?? history[idx]) : null;
+        const entry = {
+            fields: clone,
+            timestamp: Date.now(),
+            description: describeChange(prev, clone)
+        };
         history = history.slice(0, idx + 1);
         history.push(entry);
         idx = history.length - 1;

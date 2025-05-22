@@ -146,6 +146,13 @@
     }
 }
 
+/* Extra small screens */
+@media (max-width: 480px) {
+    .feasy-editor {
+        padding: 20px 10px;
+    }
+}
+
 /* ===============================
    🧲 Soporte visual para SortableJS
    =============================== */
@@ -373,7 +380,13 @@
     background: #fff;
     padding: 20px;
     border-radius: 8px;
-    width: 280px;
+    /*
+     * Make the modal responsive:
+     * - minimum width 280px so it fits on mobile
+     * - scale with viewport (90%)
+     * - cap width at 600px for large screens
+     */
+    width: clamp(280px, 90%, 600px);
     max-height: 80vh;
     overflow-y: auto;
     position: relative;
