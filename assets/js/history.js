@@ -1,14 +1,19 @@
-export function initHistory({ selector, getCurrentFields, setCurrentFields }) {
+// Manage undo/redo history for the form editor.
+// History can be persisted to localStorage by setting `persistHistory` to true.
+// Pass `persistHistory: false` to keep history only for the current session.
+export function initHistory({ selector, getCurrentFields, setCurrentFields, persistHistory = true }) {
     const undoBtn = document.getElementById('feasy-undo');
     const redoBtn = document.getElementById('feasy-redo');
     let history = [];
     let idx = -1;
 
     function persist() {
-        localStorage.setItem(
-            `feasy_history_${selector.value}`,
-            JSON.stringify({ history, idx })
-        );
+        if (persistHistory) {
+            localStorage.setItem(
+                `feasy_history_${selector.value}`,
+                JSON.stringify({ history, idx })
+            );
+        }
     }
 
     function updateButtons() {
@@ -45,7 +50,9 @@ export function initHistory({ selector, getCurrentFields, setCurrentFields }) {
 
     // Al cambiar de formulario:
     function loadHistory() {
-        const saved = localStorage.getItem(`feasy_history_${selector.value}`);
+        const saved = persistHistory
+            ? localStorage.getItem(`feasy_history_${selector.value}`)
+            : null;
         let loaded = false;
         if (saved) {
             const obj = JSON.parse(saved);

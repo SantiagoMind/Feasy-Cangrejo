@@ -597,7 +597,9 @@ document.addEventListener('DOMContentLoaded', function () {
         setCurrentFields: fields => {
             window.currentFields = fields;
             renderFields();
-        }
+        },
+        // Do not persist history between reloads
+        persistHistory: false
     });
     window.addEventListener('beforeunload', () => {
         autosave('high');

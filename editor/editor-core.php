@@ -217,7 +217,7 @@ add_action('wp_ajax_feasy_save_form', function () {
 });
 
 // ==================================================
-// AJAX: Limpiar historial de formulario (localStorage)
+// AJAX: Limpiar historial de formulario (session-based)
 // ==================================================
 add_action('wp_ajax_feasy_clear_form_history', function () {
     check_ajax_referer('feasy_editor_nonce');

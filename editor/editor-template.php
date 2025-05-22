@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(r => r.json())
             .then(res => {
                 if (res.success && res.data?.clear_key) {
-                    localStorage.removeItem(res.data.clear_key);
+                    sessionStorage.removeItem(res.data.clear_key);
                     alert('✅ History cleared.');
                 } else {
                     alert('❌ Failed to clear history.');
@@ -324,7 +324,9 @@ document.addEventListener('DOMContentLoaded', function() {
         setCurrentFields: fields => {
             currentFields = fields;
             renderFields();
-        }
+        },
+        // Do not persist history between reloads
+        persistHistory: false
     });
 });
 </script>
