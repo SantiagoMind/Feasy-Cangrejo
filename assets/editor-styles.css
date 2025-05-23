@@ -417,3 +417,37 @@
     font-size: 1.2rem;
     cursor: pointer;
 }
+
+/* Botones de historial: Undo, Redo, Historial */
+.feasy-history-controls button {
+    background: #0073aa;
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    font-size: 1rem;
+    border-radius: 6px;
+    margin-right: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+    .feasy-history-controls button:hover {
+        background: #005f8d;
+    }
+
+    /* Botón deshabilitado */
+    .feasy-history-controls button:disabled {
+        background-color: #ccc;
+        color: #666;
+        cursor: not-allowed;
+    }
+
+/* Botón Historial específico */
+#feasy-show-history {
+    background-color: #0073aa;
+}
+
+    #feasy-show-history:hover {
+        background-color: #005f8d;
+    }

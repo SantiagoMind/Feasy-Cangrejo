@@ -43,11 +43,24 @@
         <div id="feasy-form-fields"></div>
 
         <!-- 🔁 Botones de historial -->
-        <div class="feasy-history-controls" style="margin-bottom: 1em;">
-            <button id="feasy-undo" class="button" disabled>⏪ Undo</button>
-            <button id="feasy-redo" class="button" disabled>⏩ Redo</button>
-            <button id="feasy-show-history" class="button">📜 Historial</button>
+        <div class="feasy-history-controls">
+            <button id="feasy-undo" disabled>
+                <img src="<?php echo esc_url( plugins_url('../assets/icons/undo.svg', __FILE__) ); ?>"
+                     width="16" style="vertical-align: middle; margin-right: 4px;">
+                Undo
+            </button>
+            <button id="feasy-redo" disabled>
+                <img src="<?php echo esc_url( plugins_url('../assets/icons/redo.svg', __FILE__) ); ?>"
+                     width="16" style="vertical-align: middle; margin-right: 4px;">
+                Redo
+            </button>
+            <button id="feasy-show-history">
+                <img src="<?php echo esc_url( plugins_url('../assets/icons/history.svg', __FILE__) ); ?>"
+                     width="16" style="vertical-align: middle; margin-right: 4px;">
+                Historial
+            </button>
         </div>
+
 
         <div id="feasy-history-modal" class="feasy-history-modal">
             <div class="feasy-history-inner">
