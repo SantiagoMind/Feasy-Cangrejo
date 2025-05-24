@@ -45,17 +45,17 @@
         <!-- 🔁 Botones de historial -->
         <div class="feasy-history-controls">
             <button id="feasy-undo" disabled>
-                <img src="<?php echo esc_url( plugins_url('../assets/icons/undo.svg', __FILE__) ); ?>"
+                <img src="<?php echo esc_url( plugin_dir_url(__FILE__) . '../assets/icons/undo.svg' ); ?>"
                      width="16" style="vertical-align: middle; margin-right: 4px;">
                 Undo
             </button>
             <button id="feasy-redo" disabled>
-                <img src="<?php echo esc_url( plugins_url('../assets/icons/redo.svg', __FILE__) ); ?>"
+                <img src="<?php echo esc_url( plugin_dir_url(__FILE__) . '../assets/icons/redo.svg' ); ?>"
                      width="16" style="vertical-align: middle; margin-right: 4px;">
                 Redo
             </button>
             <button id="feasy-show-history">
-                <img src="<?php echo esc_url( plugins_url('../assets/icons/history.svg', __FILE__) ); ?>"
+                <img src="<?php echo esc_url( plugin_dir_url(__FILE__) . '../assets/icons/history.svg' ); ?>"
                      width="16" style="vertical-align: middle; margin-right: 4px;">
                 Historial
             </button>
