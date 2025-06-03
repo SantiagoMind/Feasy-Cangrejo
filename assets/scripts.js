@@ -267,6 +267,12 @@ document.addEventListener('DOMContentLoaded', function () {
         toast.style.display = 'none';
 
         const fd = new FormData(f);
+
+        // Adjuntar nonce de seguridad si existe
+        const nonceField = f.querySelector('input[name="cangrejo_nonce"]');
+        if (nonceField) {
+            fd.append('cangrejo_nonce', nonceField.value);
+        }
         fetch(f.getAttribute('action'), { method: 'POST', body: fd })
             .then(r => {
                 const ct = r.headers.get('content-type') || '';

@@ -11,6 +11,9 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
         wp_die(); // 🚨 Detiene completamente la ejecución
     }
 
+    // Validar nonce para evitar CSRF
+    check_ajax_referer('proyecto_cangrejo_form', 'cangrejo_nonce');
+
     // Obtener el endpoint dinámico desde el formulario enviado
     $endpoint_url = isset($_POST['_endpoint_url']) ? esc_url_raw($_POST['_endpoint_url']) : '';
 
