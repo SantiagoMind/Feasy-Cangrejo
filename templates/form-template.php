@@ -17,6 +17,8 @@ $config = include plugin_dir_path(__FILE__) . '../includes/form-config-' . $form
     <!-- Endpoint dinámico desde el config -->
     <input type="hidden" name="_endpoint_url" value="<?php echo esc_url($config['endpoint'] ?? ''); ?>">
 
+    <?php wp_nonce_field('proyecto_cangrejo_form', 'cangrejo_nonce'); ?>
+
     <!-- Render dinámico de campos -->
     <?php foreach ($config['fields'] as $field): ?>
         <?php echo cangrejo_render_field($field); ?>
