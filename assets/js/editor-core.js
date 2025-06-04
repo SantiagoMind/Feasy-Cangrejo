@@ -333,6 +333,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const debouncedAutosave = debounce(() => autosave('low'), 2000);
 
+    function getFieldNames() {
+        return Array.from(fieldsDiv.querySelectorAll('.field-name'))
+            .map(i => i.value.trim())
+            .filter(Boolean);
+    }
+
+    function updateConditionalSelects() {
+        const names = getFieldNames();
+        fieldsDiv.querySelectorAll('.field-conditional-field').forEach(select => {
+            const desired = select.dataset.desired || select.value;
+            select.innerHTML = '<option value="">Conditional: field</option>';
+            names.forEach(n => {
+                const o = document.createElement('option');
+                o.value = n;
+                o.textContent = n;
+                select.appendChild(o);
+            });
+            if (names.includes(desired)) {
+                select.value = desired;
+            } else {
+                select.value = '';
+            }
+        });
+    }
+
     function renderFields() {
         fieldsDiv.innerHTML = '';
 
@@ -374,7 +399,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 ${isOptionField && !field.dynamic ? `<textarea placeholder="Options (one per line)" class="field-options">${optionsText}</textarea>` : ''}
 
-                <input type="text" placeholder="Conditional: field" value="${field.conditional?.field || ''}" class="field-conditional-field">
+                 <select class="field-conditional-field"></select>
                 <input type="text" placeholder="Conditional: value" value="${field.conditional?.value || ''}" class="field-conditional-value">
                 <select class="field-conditional-type">
                     <option value="">Type</option>
@@ -387,6 +412,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 </button>
             `;
             fieldsDiv.appendChild(wrapper);
+            wrapper.querySelector('.field-conditional-field').dataset.desired = field.conditional?.field || '';
 
             // ?? Agregar listeners para autoguardado
             wrapper.querySelector('.field-name')?.addEventListener('input', debouncedAutosave);
@@ -399,6 +425,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         activateValidation();
+        updateConditionalSelects();
     }
 
     function activateValidation() {
@@ -417,7 +444,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function validateDuplicateNames() {
-        const names = {};
+        const names = {}
+        updateConditionalSelects();;
         fieldsDiv.querySelectorAll('.field-name').forEach(input => {
             const val = input.value.trim();
             const wrap = input.closest('.field-wrapper');
@@ -434,6 +462,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 names[val] = true;
             }
         });
+        updateConditionalSelects();
     }
 
     addFieldBtn.addEventListener('click', () => {

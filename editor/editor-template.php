@@ -104,6 +104,31 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     let currentFields = [];
+    function getFieldNames() {
+        return Array.from(fieldsDiv.querySelectorAll('.field-name'))
+            .map(i => i.value.trim())
+            .filter(Boolean);
+    }
+
+    function updateConditionalSelects() {
+        const names = getFieldNames();
+        fieldsDiv.querySelectorAll('.field-conditional-field').forEach(select => {
+            const desired = select.dataset.desired || select.value;
+            select.innerHTML = '<option value=>Conditional: field</option>';
+            names.forEach(n => {
+                const o = document.createElement('option');
+                o.value = n;
+                o.textContent = n;
+                select.appendChild(o);
+            });
+            if (names.includes(desired)) {
+                select.value = desired;
+            } else {
+                select.value = '';
+            }
+        });
+    }
+
     let currentFile   = '';
 
     function renderFields() {
@@ -135,8 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <option value="section_title"${field.type==='section_title' ? ' selected' : ''}>Section Title</option>
                 </select>
 
-                <input type="text" placeholder="Conditional: field" value="${field.conditional?.field||''}"
-                       class="field-conditional-field">
+                <select class="field-conditional-field"></select>
                 <input type="text" placeholder="Conditional: value" value="${field.conditional?.value||''}"
                        class="field-conditional-value">
 
@@ -151,9 +175,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             `;
             fieldsDiv.appendChild(wrapper);
+            wrapper.querySelector(".field-conditional-field").dataset.desired = field.conditional?.field || "";
         });
 
         validateDuplicateNames();
+        updateConditionalSelects();
         fieldsDiv.querySelectorAll('.field-name').forEach(i =>
             i.addEventListener('input', validateDuplicateNames)
         );
@@ -196,6 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 seen[val] = true;
             }
         });
+        updateConditionalSelects();
     }
 
     selector.addEventListener('change', () => {
