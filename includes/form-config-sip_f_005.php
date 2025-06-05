@@ -56,14 +56,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'employees_cloth_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'employees_cloth',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'employees_cloth_findings',
         ],
 
         // 2. Hairnets usage
@@ -78,14 +73,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'hairnets_usage_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'hairnets_usage',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'hairnets_usage_findings',
         ],
 
         // 3. Beard nets usage
@@ -100,14 +90,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'beardnets_usage_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'beardnets_usage',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'beardnets_usage_findings',
         ],
 
         // 4. Fingernails
@@ -122,14 +107,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'fingernails_clean_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'fingernails_clean',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'fingernails_clean_findings',
         ],
 
         // 5. Hand washing
@@ -144,14 +124,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'hands_washed_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'hands_washed',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'hands_washed_findings',
         ],
 
         // 6. Gloves usage
@@ -166,14 +141,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'gloves_usage_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'gloves_usage',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'gloves_usage_findings',
         ],
 
         // 7. Footwear
@@ -188,14 +158,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'footwear_usage_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'footwear_usage',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'footwear_usage_findings',
         ],
 
         // 8. Jewelry restriction
@@ -210,14 +175,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'jewelry_restriction_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'jewelry_restriction',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'jewelry_restriction_findings',
         ],
 
         // 9. Hand injury care
@@ -232,14 +192,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'hand_injury_care_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'hand_injury_care',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'hand_injury_care_findings',
         ],
 
         // 10. Eating/drinking policy
@@ -254,14 +209,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'eating_drinking_policy_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'eating_drinking_policy',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'eating_drinking_policy_findings',
         ],
 
         // 11. Cellphone policy
@@ -276,14 +226,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'cellphone_policy_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'cellphone_policy',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'cellphone_policy_findings',
         ],
 
         // 12. Makeup policy
@@ -298,14 +243,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'makeup_policy_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'makeup_policy',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'makeup_policy_findings',
         ],
 
         // 13. Illness check
@@ -320,14 +260,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'illness_check_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'illness_check',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'illness_check_findings',
         ],
 
         // 14. Headphone policy
@@ -342,14 +277,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'headphone_policy_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'headphone_policy',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'headphone_policy_findings',
         ],
 
         // 15. Pen policy
@@ -364,14 +294,9 @@ return [
             'required' => true,
         ],
         [
-            'type'        => 'textarea',
-            'label'       => 'Observations',
-            'name'        => 'pen_policy_findings',
-            'conditional' => [
-                'type'  => 'visibility',
-                'field' => 'pen_policy',
-                'value' => 'fail',
-            ],
+            'type'  => 'textarea',
+            'label' => 'Observations',
+            'name'  => 'pen_policy_findings',
         ],
         [
             'type'     => 'radio',
