@@ -2,7 +2,7 @@
 $form_key = isset($_GET['form']) ? sanitize_text_field($_GET['form']) : 'sip_f_005';
 $config = include plugin_dir_path(__FILE__) . '../includes/form-config-' . $form_key . '.php';
 
-/ Cargar reglas de logica condicional y aplicarlas al config
+// Cargar reglas de logica condicional y aplicarlas al config
 $logic_file = plugin_dir_path(__FILE__) . '../includes/form-logic-' . $form_key . '.php';
 if (file_exists($logic_file)) {
     $logic = include $logic_file;
