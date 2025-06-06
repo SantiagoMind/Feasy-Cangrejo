@@ -252,10 +252,12 @@ add_action('wp_ajax_feasy_create_form', function () {
         wp_send_json_error(['message' => 'Nombre de formulario inválido']);
     }
 
-    $filename = "form-config-{$base}.php";
-    $path = plugin_dir_path(__DIR__) . 'includes/' . $filename;
+    $configFile = "form-config-{$base}.php";
+    $logicFile  = "form-logic-{$base}.php";
+    $configPath = plugin_dir_path(__DIR__) . 'includes/' . $configFile;
+    $logicPath  = plugin_dir_path(__DIR__) . 'includes/' . $logicFile;
 
-    if (file_exists($path)) {
+    if (file_exists($configPath) || file_exists($logicPath)) {
         wp_send_json_error(['message' => 'El archivo ya existe']);
     }
 
@@ -297,10 +299,16 @@ add_action('wp_ajax_feasy_create_form', function () {
         }
     }
 
-    $phpCode = "<?php\n\nreturn " . feasy_array_to_php($default) . ";\n";
+    $phpCode    = "<?php\n\nreturn " . feasy_array_to_php($default) . ";\n";
+    $logicStub  = "<?php\n\nreturn [];\n";
 
-    if (file_put_contents($path, $phpCode) === false) {
+    if (file_put_contents($configPath, $phpCode) === false) {
         wp_send_json_error(['message' => 'No se pudo guardar el archivo']);
+    }
+
+    // Crear stub para la lógica condicional
+    if (file_put_contents($logicPath, $logicStub) === false) {
+        wp_send_json_error(['message' => 'No se pudo crear el archivo de lógica']);
     }
 
     wp_send_json_success(['message' => 'Formulario creado']);
