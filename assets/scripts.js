@@ -75,6 +75,76 @@ function initFeasyConditionals(root = document) {
 }
 
 // —————————————————————————————————————————————
+// Función para inicializar lógica avanzada de formularios
+// —————————————————————————————————————————————
+function initFeasyAdvancedConditions(logic, root = document) {
+    if (!Array.isArray(logic)) return;
+
+    const evaluate = () => {
+        logic.forEach(rule => {
+            const results = (rule.conditions || []).map(cond => {
+                const el = root.querySelector(`[name="${cond.field}"]`);
+                if (!el) return false;
+                let val = '';
+                if (el.type === 'radio') {
+                    const sel = root.querySelector(`[name="${cond.field}"]:checked`);
+                    val = sel ? sel.value : '';
+                } else if (el.type === 'checkbox') {
+                    if (el.name.endsWith('[]')) {
+                        const cbs = Array.from(root.querySelectorAll(`[name="${cond.field}[]"]:checked`));
+                        val = cbs.map(cb => cb.value);
+                    } else {
+                        val = el.checked ? el.value : '';
+                    }
+                } else {
+                    val = el.value;
+                }
+
+                switch (cond.operator) {
+                    case 'not_equal_to':
+                        return Array.isArray(val) ? !val.includes(cond.value) : val !== cond.value;
+                    case 'equal_to':
+                    default:
+                        return Array.isArray(val) ? val.includes(cond.value) : val === cond.value;
+                }
+            });
+
+            const passed = (rule.match || 'all') === 'any'
+                ? results.some(Boolean)
+                : results.every(Boolean);
+
+            (rule.actions || []).forEach(action => {
+                (action.targets || []).forEach(name => {
+                    root.querySelectorAll(`[name="${name}"]`).forEach(el => {
+                        const container = el.closest('.form-group') || el.closest('.form-columns') || el;
+                        if (action.action === 'show') {
+                            container.style.display = passed ? '' : 'none';
+                        } else if (action.action === 'hide') {
+                            container.style.display = passed ? 'none' : '';
+                        }
+                    });
+                });
+            });
+        });
+    };
+
+    const fields = new Set();
+    logic.forEach(rule => {
+        (rule.conditions || []).forEach(c => fields.add(c.field));
+    });
+
+    fields.forEach(name => {
+        root.querySelectorAll(`[name="${name}"]`).forEach(el => {
+            el.addEventListener('change', evaluate);
+            el.addEventListener('input', evaluate);
+        });
+    });
+
+    evaluate();
+    setTimeout(evaluate, 100);
+}
+
+// —————————————————————————————————————————————
 // Función para inicializar campos dinámicos desde Google Sheets
 // —————————————————————————————————————————————
 function initFeasyDynamicFields(root = document) {
@@ -214,6 +284,12 @@ document.addEventListener('DOMContentLoaded', function () {
     initFeasyConditionals();
     initFeasyDynamicFields();
 
+    document.querySelectorAll('form.feasy-form[data-logic]').forEach(f => {
+        let logic;
+        try { logic = JSON.parse(f.dataset.logic); } catch { logic = null; }
+        if (logic) initFeasyAdvancedConditions(logic, f);
+    });
+
     document.querySelectorAll('.checkbox-single').forEach(cb =>
         cb.addEventListener('change', function () {
             if (!this.checked) return;
@@ -335,6 +411,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 placeholder.appendChild(formNode);
                 initFeasyConditionals(placeholder);
                 initFeasyDynamicFields(placeholder);
+                const logicData = formNode.dataset.logic;
+                if (logicData) {
+                    try {
+                        const logic = JSON.parse(logicData);
+                        initFeasyAdvancedConditions(logic, formNode);
+                    } catch { }
+                }
                 return;
             }
 
@@ -354,6 +437,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     placeholder.appendChild(formNode);
                     initFeasyConditionals(placeholder);
                     initFeasyDynamicFields(placeholder);
+                    const logicData = formNode.dataset.logic;
+                    if (logicData) {
+                        try {
+                            const logic = JSON.parse(logicData);
+                            initFeasyAdvancedConditions(logic, formNode);
+                        } catch { }
+                    }
                 })
                 .catch(() => {
                     placeholder.innerHTML = '<div class="form-message error">❌ Error al cargar form.</div>';

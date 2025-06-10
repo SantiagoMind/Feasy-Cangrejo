@@ -4,8 +4,10 @@ $config = include plugin_dir_path(__FILE__) . '../includes/form-config-' . $form
 
 // Cargar reglas de logica condicional y aplicarlas al config
 $logic_file = plugin_dir_path(__FILE__) . '../includes/form-logic-' . $form_key . '.php';
+$logic_json = '';
 if (file_exists($logic_file)) {
     $logic = include $logic_file;
+    $logic_json = esc_attr(wp_json_encode($logic));
     foreach ($logic as $rule) {
         $condData = [
             'type'       => 'visibility',
@@ -34,8 +36,9 @@ if (file_exists($logic_file)) {
 <form class="feasy-form"
       method="post"
       action="<?php echo esc_url(admin_url('admin-ajax.php')); ?>"
-      data-form-name="<?php echo esc_attr($config['title'] ?? strtoupper($form_key)); ?>">
-    
+      data-form-name="<?php echo esc_attr($config['title'] ?? strtoupper($form_key)); ?>"
+      <?php if ($logic_json) echo 'data-logic="' . $logic_json . '"'; ?>>
+     
     <!-- Acción que será capturada por WordPress (AJAX) -->
     <input type="hidden" name="action" value="proyecto_cangrejo_ajax_submit_form">
 

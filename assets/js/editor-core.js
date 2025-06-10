@@ -13,6 +13,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const historyModal = document.getElementById("feasy-history-modal");
     const historyList = document.getElementById("feasy-history-list");
     const historyClose = document.querySelector(".feasy-history-close");
+    const editLogicBtn = document.getElementById("feasy-edit-logic");
+    const logicModal = document.getElementById("feasy-logic-modal");
+    const logicClose = document.querySelector(".feasy-logic-close");
+    const logicRules = document.getElementById("feasy-logic-rules");
+    const addRuleBtn = document.getElementById("feasy-add-rule");
+    const saveLogicBtn = document.getElementById("feasy-save-logic");
 
     const createBtn = document.getElementById('feasy-create-form');
     const newFormInput = document.getElementById('feasy-new-form-name');
@@ -50,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     window.currentFields = data.data.fields ?? (data.data.data?.fields ?? []);
                     renderFields();
                     if (historyManager) {
+                        loadLogic();
                         const loaded = historyManager.loadHistory();
                         if (!loaded) historyManager.saveSnapshot();
                     }
@@ -110,6 +117,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     window.currentFields = [];
     window.currentFile = '';
+    window.currentLogic = [];
 
     function createFeasySpinner(message = 'Loading...') {
         const container = document.createElement('div');
@@ -119,6 +127,26 @@ document.addEventListener('DOMContentLoaded', function () {
             <span>${message}</span>
         `;
         return container;
+    }
+
+    function getLogicFile() {
+        return window.currentFile.replace("form-config", "form-logic");
+    }
+    function loadLogic() {
+        if (!window.currentFile) return;
+        fetch(`${feasy_globals.ajaxurl}?action=feasy_load_logic&file=${encodeURIComponent(getLogicFile())}`)
+            .then(r => r.json())
+            .then(d => { window.currentLogic = d.success ? (d.data || []) : []; renderLogic(); });
+    }
+    function saveLogic() {
+        const fd = new FormData();
+        fd.append("action", "feasy_save_logic");
+        fd.append("file", getLogicFile());
+        fd.append("content", JSON.stringify(window.currentLogic));
+        fd.append("_ajax_nonce", feasy_globals.nonce);
+        fetch(feasy_globals.ajaxurl, { method: "POST", body: fd })
+            .then(r => r.json())
+            .then(res => console.log("Logic save", res));
     }
 
     let isSaving = false;
@@ -305,6 +333,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     saveDot.textContent = data.success ? '?' : '??';
                 }
             })
+            .then(() => saveLogic())
             .catch(err => {
                 console.warn('[Feasy] Autosave error:', err);
                 if (saveIndicator) {
@@ -517,10 +546,11 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .finally(() => {
                 overlay.style.display = 'none';
+                saveLogic();
             });
-    });
+        });
 
-    new Sortable(fieldsDiv, {
+        new Sortable(fieldsDiv, {
         animation: 150,
         handle: '.drag-handle',
         onEnd(evt) {
@@ -575,6 +605,60 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function buildConditionRow(cond = {}) {
+        const row = document.createElement("div");
+        row.className = "condition-row";
+        const f = document.createElement("select");
+        getFieldNames().forEach(n => { const o = document.createElement("option"); o.value = n; o.textContent = n; f.appendChild(o); });
+        f.className = "cond-field";
+        f.value = cond.field || "";
+        const op = document.createElement("select");
+        op.innerHTML = `<option value="equal_to">=</option><option value="not_equal_to">!=</option>`;
+        op.className = "cond-operator";
+        op.value = cond.operator || "equal_to";
+        const val = document.createElement("input");
+        val.type = "text";
+        val.className = "cond-value";
+        val.value = cond.value || "";
+        const del = document.createElement("button"); del.type = "button"; del.textContent = "?"; del.addEventListener("click", () => row.remove());
+        row.appendChild(f); row.appendChild(op); row.appendChild(val); row.appendChild(del);
+        return row;
+    }
+    function buildActionRow(act = {}) {
+        const row = document.createElement("div");
+        row.className = "action-row";
+        const t = document.createElement("select");
+        t.innerHTML = `<option value="show">Show</option><option value="hide">Hide</option><option value="require">Require</option>`;
+        t.className = "action-type";
+        t.value = act.action || "show";
+        const targets = document.createElement("select");
+        targets.multiple = true;
+        targets.className = "action-targets";
+        getFieldNames().forEach(n => { const o = document.createElement("option"); o.value = n; o.textContent = n; targets.appendChild(o); });
+        (act.targets || []).forEach(v => { const opt = [...targets.options].find(o => o.value === v); if (opt) opt.selected = true; });
+        const del = document.createElement("button"); del.type = "button"; del.textContent = "?"; del.addEventListener("click", () => row.remove());
+        row.appendChild(t); row.appendChild(targets); row.appendChild(del);
+        return row;
+    }
+    function buildRule(rule = {}) {
+        const div = document.createElement("div"); div.className = "logic-rule";
+        const match = document.createElement("select"); match.className = "rule-match"; match.innerHTML = `<option value="all">All</option><option value="any">Any</option>`; match.value = rule.match || "all";
+        const condWrap = document.createElement("div"); condWrap.className = "conditions";
+        (rule.conditions || []).forEach(c => condWrap.appendChild(buildConditionRow(c)));
+        const addCond = document.createElement("button"); addCond.type = "button"; addCond.textContent = "Add Condition"; addCond.addEventListener("click", () => condWrap.appendChild(buildConditionRow()));
+        const actWrap = document.createElement("div"); actWrap.className = "actions";
+        (rule.actions || []).forEach(a => actWrap.appendChild(buildActionRow(a)));
+        const addAct = document.createElement("button"); addAct.type = "button"; addAct.textContent = "Add Action"; addAct.addEventListener("click", () => actWrap.appendChild(buildActionRow()));
+        const del = document.createElement("button"); del.type = "button"; del.textContent = "Delete Rule"; del.addEventListener("click", () => div.remove());
+        div.appendChild(match); div.appendChild(condWrap); div.appendChild(addCond); div.appendChild(actWrap); div.appendChild(addAct); div.appendChild(del);
+        return div;
+    }
+    function renderLogic() {
+        if (!logicRules) return;
+        logicRules.innerHTML = "";
+        window.currentLogic.forEach(r => logicRules.appendChild(buildRule(r)));
+    }
+
     clearHistoryBtn?.addEventListener('click', () => {
         if (!window.currentFile) {
             alert('? No form selected.');
@@ -626,6 +710,31 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     historyClose?.addEventListener('click', () => historyModal.classList.remove('open'));
     historyModal?.addEventListener('click', e => { if (e.target === historyModal) historyModal.classList.remove('open'); });
+
+    editLogicBtn?.addEventListener("click", () => { renderLogic(); logicModal.classList.add("open"); });
+    logicClose?.addEventListener("click", () => logicModal.classList.remove("open"));
+    logicModal?.addEventListener("click", e => { if (e.target === logicModal) logicModal.classList.remove("open"); });
+    addRuleBtn?.addEventListener("click", () => { logicRules.appendChild(buildRule()); });
+    saveLogicBtn?.addEventListener("click", () => { window.currentLogic = collectLogic(); saveLogic(); logicModal.classList.remove("open"); });
+
+    function collectLogic() {
+        const rules = [];
+        logicRules.querySelectorAll(".logic-rule").forEach(div => {
+            const match = div.querySelector(".rule-match").value;
+            const conditions = Array.from(div.querySelectorAll(".condition-row")).map(r => ({
+                field: r.querySelector(".cond-field").value,
+                operator: r.querySelector(".cond-operator").value,
+                target: "value",
+                value: r.querySelector(".cond-value").value
+            })).filter(c => c.field);
+            const actions = Array.from(div.querySelectorAll(".action-row")).map(r => ({
+                action: r.querySelector(".action-type").value,
+                targets: Array.from(r.querySelector(".action-targets").selectedOptions).map(o => o.value)
+            })).filter(a => a.targets.length);
+            if (conditions.length && actions.length) rules.push({ conditions, match, actions });
+        });
+        return rules;
+    }
 
     historyManager = initHistory({
         selector,

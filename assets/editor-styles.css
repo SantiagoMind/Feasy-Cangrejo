@@ -451,3 +451,56 @@
     #feasy-show-history:hover {
         background-color: #005f8d;
     }
+
+/* Modal para el constructor de lógica */
+.feasy-logic-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+    .feasy-logic-modal.open {
+        display: flex;
+    }
+
+.feasy-logic-inner {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: clamp(300px, 90%, 700px);
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+    .feasy-logic-inner .logic-rule {
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 6px;
+    }
+
+    .feasy-logic-inner .condition-row,
+    .feasy-logic-inner .action-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 6px;
+        align-items: center;
+    }
+
+.feasy-logic-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
