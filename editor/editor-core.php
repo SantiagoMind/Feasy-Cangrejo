@@ -312,4 +312,82 @@ add_action('wp_ajax_feasy_create_form', function () {
     }
 
     wp_send_json_success(['message' => 'Formulario creado']);
+    });
+
+// ==================================================
+// AJAX: Cargar lógica condicional
+// ==================================================
+add_action('wp_ajax_feasy_load_logic', function () {
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'No autorizado']);
+    }
+
+    $file = sanitize_file_name($_GET['file'] ?? '');
+    if (!$file || strpos($file, 'form-logic-') !== 0) {
+        wp_send_json_error(['message' => 'Archivo inválido']);
+    }
+
+    $path = plugin_dir_path(__DIR__) . 'includes/' . $file;
+    if (!file_exists($path)) {
+        wp_send_json_error(['message' => 'Archivo no encontrado']);
+    }
+
+    $logic = include $path;
+    wp_send_json_success(['data' => $logic]);
+});
+
+// ==================================================
+// AJAX: Guardar lógica condicional
+// ==================================================
+add_action('wp_ajax_feasy_save_logic', function () {
+    check_ajax_referer('feasy_editor_nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'No autorizado']);
+    }
+
+    $file    = sanitize_file_name($_POST['file'] ?? '');
+    $content = stripslashes($_POST['content'] ?? '');
+
+    if (!$file || strpos($file, 'form-logic-') !== 0) {
+        wp_send_json_error(['message' => 'Archivo inválido']);
+    }
+
+    $path = plugin_dir_path(__DIR__) . 'includes/' . $file;
+
+    $data = json_decode($content, true);
+    if (!is_array($data)) {
+        wp_send_json_error(['message' => 'Contenido inválido']);
+    }
+
+    if (!function_exists('feasy_array_to_php')) {
+        function feasy_array_to_php($data, $indent = 0) {
+            $spaces = str_repeat('    ', $indent);
+            if (is_array($data)) {
+                $isAssoc = array_keys($data) !== range(0, count($data) - 1);
+                $items = [];
+                foreach ($data as $key => $value) {
+                    $keyPart = $isAssoc ? "'" . addslashes($key) . "' => " : '';
+                    $items[] = $spaces . '    ' . $keyPart . feasy_array_to_php($value, $indent + 1);
+                }
+                return "[\n" . implode(",\n", $items) . "\n" . $spaces . "]";
+            } elseif (is_string($data)) {
+                return "'" . addslashes($data) . "'";
+            } elseif (is_bool($data)) {
+                return $data ? 'true' : 'false';
+            } elseif (is_null($data)) {
+                return 'null';
+            } else {
+                return $data;
+            }
+        }
+    }
+
+    $export = "<?php\n\nreturn " . feasy_array_to_php($data) . ";\n";
+
+    if (false === file_put_contents($path, $export)) {
+        wp_send_json_error(['message' => 'Error al guardar']);
+    }
+
+    wp_send_json_success(['message' => 'Guardado']);
 });
