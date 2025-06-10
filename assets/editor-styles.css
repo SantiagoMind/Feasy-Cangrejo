@@ -96,6 +96,13 @@
     }
 
     /* Botones */
+
+    .feasy-editor .conditional-summary {
+        font-size: 0.85rem;
+        color: #555;
+        flex-basis: 100%;
+    }
+
     .feasy-editor #feasy-add-field,
     .feasy-editor #feasy-save-form-visual {
         background: #0073aa;

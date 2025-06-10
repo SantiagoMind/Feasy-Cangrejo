@@ -387,6 +387,20 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function updateSummary(wrapper) {
+        const field = wrapper.querySelector(".field-conditional-field")?.value.trim();
+        const val = wrapper.querySelector(".field-conditional-value")?.value.trim();
+        const type = wrapper.querySelector(".field-conditional-type")?.value;
+        const sum = wrapper.querySelector(".conditional-summary");
+        if (!sum) return;
+        if (field && val && type) {
+            const action = type === "visibility" ? "shows" : "requires";
+            sum.textContent = `Trigger: ${field} ${action} this field when value is "${val}"`;
+        } else {
+            sum.textContent = "";
+        }
+    }
+
     function renderFields() {
         fieldsDiv.innerHTML = '';
 
@@ -439,8 +453,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 <button class="button button-link-delete" title="Delete">
                     <img src="${feasy_globals.plugin_url}assets/icons/delete.svg" width="16" alt="Delete" />
                 </button>
+                 <div class="conditional-summary"></div>
             `;
             fieldsDiv.appendChild(wrapper);
+            updateSummary(wrapper);
             wrapper.querySelector('.field-conditional-field').dataset.desired = field.conditional?.field || '';
 
             // ?? Agregar listeners para autoguardado
@@ -448,9 +464,9 @@ document.addEventListener('DOMContentLoaded', function () {
             wrapper.querySelector('.field-label')?.addEventListener('input', debouncedAutosave);
             wrapper.querySelector('.field-type')?.addEventListener('change', () => autosave('medium'));
             wrapper.querySelector('.field-options')?.addEventListener('input', debouncedAutosave);
-            wrapper.querySelector('.field-conditional-field')?.addEventListener('input', debouncedAutosave);
-            wrapper.querySelector('.field-conditional-value')?.addEventListener('input', debouncedAutosave);
-            wrapper.querySelector('.field-conditional-type')?.addEventListener('change', () => autosave('medium'));
+            wrapper.querySelector('.field-conditional-field')?.addEventListener('input', () => { debouncedAutosave(); updateSummary(wrapper); });
+            wrapper.querySelector('.field-conditional-value')?.addEventListener('input', () => { debouncedAutosave(); updateSummary(wrapper); });
+            wrapper.querySelector('.field-conditional-type')?.addEventListener('change', () => { autosave('medium'); updateSummary(wrapper); });
         });
 
         activateValidation();
