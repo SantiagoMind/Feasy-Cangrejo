@@ -78,7 +78,40 @@ function initFeasyConditionals(root = document) {
 // Función para inicializar lógica avanzada de formularios
 // —————————————————————————————————————————————
 function initFeasyAdvancedConditions(logic, root = document) {
-    if (!Array.isArray(logic)) return;
+    if (!Array.isArray(logic)) {
+        if (logic && Array.isArray(logic.rules)) {
+            logic = logic.rules;
+        } else {
+            console.warn('Feasy: invalid logic format', logic);
+            return;
+        }
+    }
+
+    const missing = new Set();
+
+    function checkField(name) {
+        const els = root.querySelectorAll(`[name="${name}"]`);
+        if (els.length === 0) {
+            missing.add(name);
+        }
+    }
+
+    logic.forEach(rule => {
+        (rule.conditions || []).forEach(c => checkField(c.field));
+        (rule.actions || []).forEach(a => {
+            (a.targets || []).forEach(t => checkField(t));
+        });
+    });
+
+    if (missing.size) {
+        const msg = document.createElement('div');
+        msg.className = 'feasy-debug-missing';
+        msg.textContent = `Missing fields in logic: ${Array.from(missing).join(', ')}`;
+        root.prepend(msg);
+        root.classList.add('feasy-missing-field');
+    } else {
+        root.classList.remove('feasy-missing-field');
+    }
 
     const evaluate = () => {
         logic.forEach(rule => {

@@ -548,3 +548,16 @@
 [data-conditional] {
     display: none;
 }
+
+.feasy-debug-missing {
+    background: #fee;
+    color: #900;
+    padding: 5px 10px;
+    margin-bottom: 10px;
+    border: 1px solid #f99;
+    font-size: 14px;
+}
+
+.feasy-missing-field {
+    outline: 2px dashed red !important;
+}
