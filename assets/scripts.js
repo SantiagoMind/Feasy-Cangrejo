@@ -81,6 +81,18 @@ function initFeasyAdvancedConditions(logic, root = document) {
     if (!Array.isArray(logic)) {
         if (logic && Array.isArray(logic.rules)) {
             logic = logic.rules;
+        } else if (logic && Array.isArray(logic.data)) {
+            logic = logic.data;
+        } else if (logic && typeof logic === 'object') {
+            const numericKeys = Object.keys(logic)
+                .filter(k => String(+k) === k)
+                .sort((a, b) => a - b);
+            if (numericKeys.length) {
+                logic = numericKeys.map(k => logic[k]);
+            } else {
+                console.warn('Feasy: invalid logic format', logic);
+                return;
+            }
         } else {
             console.warn('Feasy: invalid logic format', logic);
             return;
