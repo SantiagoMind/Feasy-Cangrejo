@@ -55,8 +55,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.success) {
                     window.currentFields = data.data.fields ?? (data.data.data?.fields ?? []);
                     renderFields();
+                    loadLogic();
                     if (historyManager) {
-                        loadLogic();
                         const loaded = historyManager.loadHistory();
                         if (!loaded) historyManager.saveSnapshot();
                     }
@@ -136,7 +136,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!window.currentFile) return;
         fetch(`${feasy_globals.ajaxurl}?action=feasy_load_logic&file=${encodeURIComponent(getLogicFile())}`)
             .then(r => r.json())
-            .then(d => { window.currentLogic = d.success ? (d.data || []) : []; renderLogic(); });
+            .then(d => { window.currentLogic = d.success ? (d.data || []) : []; renderLogic(); })
+            .catch(() => { window.currentLogic = []; renderLogic(); });
     }
     function saveLogic() {
         const fd = new FormData();
