@@ -8,6 +8,20 @@ $logic_json = '[]';
 if (file_exists($logic_file)) {
     $logic = include $logic_file;
     $logic_json = esc_attr(wp_json_encode($logic));
+
+    $apply_conditional = function (&$fields, $target, $condData) use (&$apply_conditional) {
+        foreach ($fields as &$field) {
+            if (($field['name'] ?? '') === $target) {
+                $field['conditional'] = $condData;
+            }
+
+            if (!empty($field['fields']) && is_array($field['fields'])) {
+                $apply_conditional($field['fields'], $target, $condData);
+            }
+        }
+        unset($field);
+    };
+
     foreach ($logic as $rule) {
         $condData = [
             'type'       => 'visibility',
@@ -16,19 +30,15 @@ if (file_exists($logic_file)) {
             }, $rule['conditions'] ?? []),
             'operator'   => ($rule['match'] ?? 'all') === 'all' ? 'AND' : 'OR',
         ];
+
         foreach ($rule['actions'] as $action) {
             if (($action['action'] ?? '') === 'show') {
                 foreach ($action['targets'] as $target) {
-                    foreach ($config['fields'] as &$f) {
-                        if (($f['name'] ?? '') === $target) {
-                            $f['conditional'] = $condData;
-                        }
-                    }
+                    $apply_conditional($config['fields'], $target, $condData);
                 }
             }
         }
     }
-    unset($f);
 }
 
 ?>
