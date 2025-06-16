@@ -502,3 +502,42 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+// ----------------------------------------------------------------------------
+// Debug helpers accessible from the browser console
+// ----------------------------------------------------------------------------
+window.feasyDebug = {
+    initConditionals: initFeasyConditionals,
+    initAdvancedConditions: initFeasyAdvancedConditions,
+    initDynamicFields: initFeasyDynamicFields,
+    /**
+     * Reinitialize Feasy form logic and dynamic fields for a given form.
+     * Useful when forms are injected dynamically or after resetting markup.
+     * @param {string} selector CSS selector for the form container
+     */
+    reinitForm(selector = '.feasy-form') {
+        const form = document.querySelector(selector);
+        if (!form) return;
+        initFeasyConditionals(form);
+        initFeasyDynamicFields(form);
+        if (form.dataset.logic) {
+            try {
+                const logic = JSON.parse(form.dataset.logic);
+                initFeasyAdvancedConditions(logic, form);
+            } catch (err) {
+                console.error('feasyDebug: invalid logic JSON', err);
+            }
+        }
+    },
+    evaluateCurrentForm(selector = '.feasy-form') {
+        const form = document.querySelector(selector);
+        if (form && form.dataset.logic) {
+            try {
+                const logic = JSON.parse(form.dataset.logic);
+                initFeasyAdvancedConditions(logic, form);
+            } catch (err) {
+                console.error('feasyDebug: invalid logic JSON', err);
+            }
+        }
+    }
+};
