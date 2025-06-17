@@ -182,6 +182,7 @@ function initFeasyAdvancedConditions(logic, root = document) {
         root.querySelectorAll(`[name="${name}"]`).forEach(el => {
             el.addEventListener('change', evaluate);
             el.addEventListener('input', evaluate);
+            el.addEventListener('click', evaluate); // Added for radio button click handling
         });
     });
 
