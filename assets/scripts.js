@@ -78,6 +78,9 @@ function initFeasyConditionals(root = document) {
 // Función para inicializar lógica avanzada de formularios
 // —————————————————————————————————————————————
 function initFeasyAdvancedConditions(logic, root = document) {
+    if (window.feasyDebugMode) {
+        console.log('Feasy initFeasyAdvancedConditions', { root, logic });
+    }
     if (!Array.isArray(logic)) {
         if (logic && Array.isArray(logic.rules)) {
             logic = logic.rules;
@@ -126,7 +129,10 @@ function initFeasyAdvancedConditions(logic, root = document) {
     }
 
     const evaluate = () => {
-        logic.forEach(rule => {
+        if (window.feasyDebugMode) {
+            console.log('Feasy evaluate()', { root, logic });
+        }
+        logic.forEach((rule, ruleIndex) => {
             const results = (rule.conditions || []).map(cond => {
                 const el = root.querySelector(`[name="${cond.field}"]`);
                 if (!el) return false;
@@ -157,6 +163,9 @@ function initFeasyAdvancedConditions(logic, root = document) {
             const passed = (rule.match || 'all') === 'any'
                 ? results.some(Boolean)
                 : results.every(Boolean);
+            if (window.feasyDebugMode) {
+                console.log(`Rule ${ruleIndex} results`, results, 'passed', passed);
+            }
 
             (rule.actions || []).forEach(action => {
                 (action.targets || []).forEach(name => {
@@ -180,9 +189,14 @@ function initFeasyAdvancedConditions(logic, root = document) {
 
     fields.forEach(name => {
         root.querySelectorAll(`[name="${name}"]`).forEach(el => {
-            el.addEventListener('change', evaluate);
-            el.addEventListener('input', evaluate);
-            el.addEventListener('click', evaluate); // Added for radio button click handling
+            ['change', 'input', 'click'].forEach(type => {
+                el.addEventListener(type, event => {
+                    if (window.feasyDebugMode) {
+                        console.log(`Feasy event ${type} on ${event.target.name}`, event.target.value);
+                    }
+                    evaluate();
+                });
+            });
         });
     });
 
