@@ -45,6 +45,7 @@ function initFeasyConditionals(root = document) {
                 root.querySelectorAll(`[name="${name}"]`).forEach(el => {
                     el.addEventListener('change', updateVisibility);
                     el.addEventListener('input', updateVisibility);
+                    el.addEventListener('click', updateVisibility); // ← CRÍTICO para radios
                 });
             });
 
@@ -78,61 +79,10 @@ function initFeasyConditionals(root = document) {
 // Función para inicializar lógica avanzada de formularios
 // —————————————————————————————————————————————
 function initFeasyAdvancedConditions(logic, root = document) {
-    if (window.feasyDebugMode) {
-        console.log('Feasy initFeasyAdvancedConditions', { root, logic });
-    }
-    if (!Array.isArray(logic)) {
-        if (logic && Array.isArray(logic.rules)) {
-            logic = logic.rules;
-        } else if (logic && Array.isArray(logic.data)) {
-            logic = logic.data;
-        } else if (logic && typeof logic === 'object') {
-            const numericKeys = Object.keys(logic)
-                .filter(k => String(+k) === k)
-                .sort((a, b) => a - b);
-            if (numericKeys.length) {
-                logic = numericKeys.map(k => logic[k]);
-            } else {
-                console.warn('Feasy: invalid logic format', logic);
-                return;
-            }
-        } else {
-            console.warn('Feasy: invalid logic format', logic);
-            return;
-        }
-    }
-
-    const missing = new Set();
-
-    function checkField(name) {
-        const els = root.querySelectorAll(`[name="${name}"]`);
-        if (els.length === 0) {
-            missing.add(name);
-        }
-    }
-
-    logic.forEach(rule => {
-        (rule.conditions || []).forEach(c => checkField(c.field));
-        (rule.actions || []).forEach(a => {
-            (a.targets || []).forEach(t => checkField(t));
-        });
-    });
-
-    if (missing.size) {
-        const msg = document.createElement('div');
-        msg.className = 'feasy-debug-missing';
-        msg.textContent = `Missing fields in logic: ${Array.from(missing).join(', ')}`;
-        root.prepend(msg);
-        root.classList.add('feasy-missing-field');
-    } else {
-        root.classList.remove('feasy-missing-field');
-    }
+    if (!Array.isArray(logic)) return;
 
     const evaluate = () => {
-        if (window.feasyDebugMode) {
-            console.log('Feasy evaluate()', { root, logic });
-        }
-        logic.forEach((rule, ruleIndex) => {
+        logic.forEach(rule => {
             const results = (rule.conditions || []).map(cond => {
                 const el = root.querySelector(`[name="${cond.field}"]`);
                 if (!el) return false;
@@ -163,9 +113,6 @@ function initFeasyAdvancedConditions(logic, root = document) {
             const passed = (rule.match || 'all') === 'any'
                 ? results.some(Boolean)
                 : results.every(Boolean);
-            if (window.feasyDebugMode) {
-                console.log(`Rule ${ruleIndex} results`, results, 'passed', passed);
-            }
 
             (rule.actions || []).forEach(action => {
                 (action.targets || []).forEach(name => {
@@ -189,14 +136,8 @@ function initFeasyAdvancedConditions(logic, root = document) {
 
     fields.forEach(name => {
         root.querySelectorAll(`[name="${name}"]`).forEach(el => {
-            ['change', 'input', 'click'].forEach(type => {
-                el.addEventListener(type, event => {
-                    if (window.feasyDebugMode) {
-                        console.log(`Feasy event ${type} on ${event.target.name}`, event.target.value);
-                    }
-                    evaluate();
-                });
-            });
+            el.addEventListener('change', evaluate);
+            el.addEventListener('input', evaluate);
         });
     });
 
@@ -343,6 +284,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
     initFeasyConditionals();
     initFeasyDynamicFields();
+
+    // Detect dynamically inserted forms and initialize their logic
+    const observer = new MutationObserver(records => {
+        records.forEach(rec => {
+            rec.addedNodes.forEach(node => {
+                if (!(node instanceof HTMLElement)) return;
+                if (node.matches('[data-conditional], form.feasy-form')) {
+                    initFeasyConditionals(node);
+                    initFeasyDynamicFields(node);
+                    if (node.dataset.logic) {
+                        try {
+                            const logic = JSON.parse(node.dataset.logic);
+                            initFeasyAdvancedConditions(logic, node);
+                        } catch { }
+                    }
+                } else if (node.querySelector?.('[data-conditional], form.feasy-form')) {
+                    initFeasyConditionals(node);
+                    initFeasyDynamicFields(node);
+                    node.querySelectorAll('form.feasy-form[data-logic]').forEach(f => {
+                        try {
+                            const logic = JSON.parse(f.dataset.logic);
+                            initFeasyAdvancedConditions(logic, f);
+                        } catch { }
+                    });
+                }
+            });
+        });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
 
     document.querySelectorAll('form.feasy-form[data-logic]').forEach(f => {
         let logic;
@@ -517,42 +487,3 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
-
-// ----------------------------------------------------------------------------
-// Debug helpers accessible from the browser console
-// ----------------------------------------------------------------------------
-window.feasyDebug = {
-    initConditionals: initFeasyConditionals,
-    initAdvancedConditions: initFeasyAdvancedConditions,
-    initDynamicFields: initFeasyDynamicFields,
-    /**
-     * Reinitialize Feasy form logic and dynamic fields for a given form.
-     * Useful when forms are injected dynamically or after resetting markup.
-     * @param {string} selector CSS selector for the form container
-     */
-    reinitForm(selector = '.feasy-form') {
-        const form = document.querySelector(selector);
-        if (!form) return;
-        initFeasyConditionals(form);
-        initFeasyDynamicFields(form);
-        if (form.dataset.logic) {
-            try {
-                const logic = JSON.parse(form.dataset.logic);
-                initFeasyAdvancedConditions(logic, form);
-            } catch (err) {
-                console.error('feasyDebug: invalid logic JSON', err);
-            }
-        }
-    },
-    evaluateCurrentForm(selector = '.feasy-form') {
-        const form = document.querySelector(selector);
-        if (form && form.dataset.logic) {
-            try {
-                const logic = JSON.parse(form.dataset.logic);
-                initFeasyAdvancedConditions(logic, form);
-            } catch (err) {
-                console.error('feasyDebug: invalid logic JSON', err);
-            }
-        }
-    }
-};
