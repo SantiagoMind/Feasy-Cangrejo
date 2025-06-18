@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * Obtiene la clave secreta usada para firmar los datos.
@@ -36,7 +36,6 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header('Content-Type: application/json; charset=utf-8');
         wp_send_json_error(['message' => 'Método no permitido']);
-        wp_die(); // 🚨 Detiene completamente la ejecución
     }
 
     // Validar nonce para evitar CSRF
@@ -49,7 +48,6 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     if (empty($endpoint_url)) {
         header('Content-Type: application/json; charset=utf-8');
         wp_send_json_error(['message' => 'Endpoint no proporcionado']);
-        wp_die();
     }
 
     // Recopilar y sanitizar los datos enviados
@@ -74,16 +72,16 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
         // Token dinámico incluido en el cuerpo
         $data['__token'] = feasy_generate_auth_token($secret);
 
-        $body_to_sign = wp_json_encode($data);
+        $body_to_sign = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $signature    = hash_hmac('sha256', $body_to_sign, $secret);
 
         // Firma dentro del cuerpo para que Apps Script pueda validarla
         $data['__signature'] = $signature;
 
-        $body = wp_json_encode($data);
+        $body = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $headers['X-Feasy-Signature'] = $signature; // opcional para otros entornos
     } else {
-        $body = wp_json_encode($data);
+        $body = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     // Enviar los datos al endpoint de Google Apps Script
@@ -97,13 +95,11 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
         error_log('Error al enviar datos al endpoint: ' . $response->get_error_message());
         header('Content-Type: application/json; charset=utf-8');
         wp_send_json_error(['message' => 'Error al enviar los datos.']);
-        wp_die();
     }
 
     // ✅ Éxito: devolver respuesta JSON para el frontend (JS)
     header('Content-Type: application/json; charset=utf-8');
     wp_send_json_success(['message' => 'Formulario enviado correctamente']);
-    wp_die(); // ✅ Detener ejecución completamente
 }
 
 // Registrar la acción AJAX (logueados y no logueados)

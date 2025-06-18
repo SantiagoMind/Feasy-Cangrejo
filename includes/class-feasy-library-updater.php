@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 class Feasy_Library_Updater {
     protected static $libraries = [];

@@ -1,4 +1,4 @@
-﻿// assets/scripts.js
+// assets/scripts.js
 
 // —————————————————————————————————————————————
 // Función para inicializar lógicas condicionales y de cálculo

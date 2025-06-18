@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 if (!class_exists('Feasy_Library_Updater')) return;
 
