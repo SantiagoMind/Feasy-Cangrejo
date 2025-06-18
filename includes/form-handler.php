@@ -1,4 +1,32 @@
 ﻿<?php
+
+/**
+ * Obtiene la clave secreta usada para firmar los datos.
+ *
+ * Puedes definirla mediante la constante FEASY_HMAC_SECRET en wp-config.php
+ * o como variable de entorno del mismo nombre.
+ */
+function feasy_get_hmac_secret() {
+    if (defined('FEASY_HMAC_SECRET')) {
+        return FEASY_HMAC_SECRET;
+    }
+
+    $env = getenv('FEASY_HMAC_SECRET');
+    return $env ? $env : '';
+}
+
+/**
+ * Genera un token temporal para autenticación.
+ *
+ * El token está compuesto por el timestamp y una firma HMAC del mismo,
+ * separados por dos puntos. Expira a los pocos minutos.
+ */
+function feasy_generate_auth_token($secret) {
+    $timestamp = time();
+    $signature = hash_hmac('sha256', $timestamp, $secret);
+    return $timestamp . ':' . $signature;
+}
+
 /**
  * Función para procesar el envío del formulario y enviarlo a un endpoint de Google Apps Script.
  * Este handler trabaja exclusivamente con AJAX (admin-ajax.php).
@@ -38,11 +66,31 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
         }
     }
 
+    // Preparar cuerpo y firma HMAC para asegurar la integridad de los datos
+    $headers = ['Content-Type' => 'application/json'];
+
+    $secret = feasy_get_hmac_secret();
+    if (!empty($secret)) {
+        // Token dinámico incluido en el cuerpo
+        $data['__token'] = feasy_generate_auth_token($secret);
+
+        $body_to_sign = wp_json_encode($data);
+        $signature    = hash_hmac('sha256', $body_to_sign, $secret);
+
+        // Firma dentro del cuerpo para que Apps Script pueda validarla
+        $data['__signature'] = $signature;
+
+        $body = wp_json_encode($data);
+        $headers['X-Feasy-Signature'] = $signature; // opcional para otros entornos
+    } else {
+        $body = wp_json_encode($data);
+    }
+
     // Enviar los datos al endpoint de Google Apps Script
     $response = wp_remote_post($endpoint_url, [
         'method'  => 'POST',
-        'headers' => ['Content-Type' => 'application/json'],
-        'body'    => wp_json_encode($data),
+        'headers' => $headers,
+        'body'    => $body,
     ]);
 
     if (is_wp_error($response)) {
