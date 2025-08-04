@@ -158,14 +158,14 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     $remote_json = json_decode($response_body, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
         feasy_store_failed_submission($data);
-        error_log('Respuesta JSON inválida: ' . json_last_error_msg());
+        error_log('Respuesta JSON inválida: ' . json_last_error_msg() . ' | Cuerpo: ' . substr($response_body, 0, 200));
         $feasy_shutdown['sent'] = true;
         header('Content-Type: application/json; charset=utf-8');
-        wp_send_json_error(['message' => 'Respuesta no válida del servidor']);
+        wp_send_json_error(['message' => 'Error al enviar los datos.']);
         wp_die();
     }
 
-    if (is_array($remote_json) && isset($remote_json['status']) && $remote_json['status'] !== 'success') {
+    if (!isset($remote_json['status']) || $remote_json['status'] !== 'success') {
         feasy_store_failed_submission($data);
         $msg = isset($remote_json['message']) ? $remote_json['message'] : 'Error al enviar los datos.';
         error_log('Error reportado por endpoint: ' . $msg);
