@@ -158,24 +158,16 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     $remote_json = json_decode($response_body, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
         feasy_store_failed_submission($data);
-        error_log('Respuesta JSON inválida: ' . json_last_error_msg() . ' | Cuerpo: ' . substr($response_body, 0, 200));
+        error_log('Respuesta JSON inválida: ' . json_last_error_msg());
         $feasy_shutdown['sent'] = true;
         header('Content-Type: application/json; charset=utf-8');
-        wp_send_json_error(['message' => 'Error al enviar los datos.']);
+        wp_send_json_error(['message' => 'Respuesta no válida del servidor']);
         wp_die();
     }
 
-    $status_field = $remote_json['status'] ?? ($remote_json['success'] ?? null);
-    $is_ok = false;
-    if (is_bool($status_field)) {
-        $is_ok = $status_field;
-    } elseif (is_string($status_field)) {
-        $is_ok = strtolower($status_field) === 'success';
-    }
-
-    if (!$is_ok) {
+    if (is_array($remote_json) && isset($remote_json['status']) && $remote_json['status'] !== 'success') {
         feasy_store_failed_submission($data);
-        $msg = $remote_json['message'] ?? 'Error al enviar los datos.';
+        $msg = isset($remote_json['message']) ? $remote_json['message'] : 'Error al enviar los datos.';
         error_log('Error reportado por endpoint: ' . $msg);
         $feasy_shutdown['sent'] = true;
         header('Content-Type: application/json; charset=utf-8');
@@ -186,8 +178,7 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     // ✅ Éxito: marcar envío y devolver respuesta JSON para el frontend (JS)
     $feasy_shutdown['sent'] = true;
     header('Content-Type: application/json; charset=utf-8');
-    $success_msg = $remote_json['message'] ?? 'Formulario enviado correctamente';
-    wp_send_json_success(['message' => $success_msg]);
+    wp_send_json_success(['message' => 'Formulario enviado correctamente']);
     wp_die(); // ✅ Detener ejecución completamente
 }
 
