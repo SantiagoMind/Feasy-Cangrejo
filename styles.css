@@ -1,0 +1,663 @@
+/* === CONTENEDOR FORMULARIO PRINCIPAL === */
+.feasy-form {
+    margin: 0 auto;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-family: Arial, sans-serif;
+    box-sizing: border-box;
+}
+
+    .feasy-form * {
+        box-sizing: border-box;
+    }
+
+    .feasy-form label {
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    /* === INPUTS === */
+    .feasy-form input[type="text"],
+    .feasy-form input[type="number"],
+    .feasy-form input[type="date"],
+    .feasy-form input[type="datetime-local"],
+    .feasy-form input[type="email"],
+    .feasy-form input[type="tel"],
+    .feasy-form select,
+    .feasy-form textarea {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+
+/* === BOTÓN DE ENVÍO === */
+.form-submit-row {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+    margin-top: 30px !important;
+    padding-left: 15px !important;
+    box-sizing: border-box;
+}
+
+    .form-submit-row button {
+        background-color: #007BFF !important;
+        color: white !important;
+        padding: 10px 24px !important;
+        font-size: 15px !important;
+        border: none !important;
+        border-radius: 4px !important;
+        cursor: pointer !important;
+        transition: background-color 0.3s ease !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        margin: 0 !important;
+    }
+
+        .form-submit-row button:hover {
+            background-color: #0056b3 !important;
+        }
+
+/* === RADIO Y CHECKBOX === */
+.single-choice-group,
+.checkbox-single-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+    .single-choice-group .form-option,
+    .checkbox-single-group .form-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+        color: #333;
+        font-weight: normal;
+        cursor: pointer;
+    }
+
+    .single-choice-group .form-label,
+    .checkbox-single-group .form-label {
+        width: 100%;
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .single-choice-group .form-option input[type="radio"],
+    input[type="radio"] {
+        margin-right: 8px;
+        width: auto !important;
+    }
+
+    .checkbox-single-group .form-option input[type="checkbox"] {
+        appearance: none;
+        -webkit-appearance: none;
+        border: 2px solid #999;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        margin-right: 8px;
+        position: relative;
+        cursor: pointer;
+    }
+
+        .checkbox-single-group .form-option input[type="checkbox"]:checked::before {
+            content: "";
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #007BFF;
+        }
+
+/* === TÍTULOS DE SECCIÓN === */
+.form-section-title {
+    font-size: 18px;
+    margin: 30px 0 15px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5px;
+    color: #444;
+}
+
+/* === CAMPOS REQUERIDOS === */
+.required-label {
+    color: red;
+    margin-left: 4px;
+}
+
+/* === MENSAJES === */
+.form-message.success {
+    background: #d4edda;
+    color: #155724;
+    padding: 12px;
+    border-left: 5px solid #28a745;
+    border-radius: 4px;
+    margin-top: 20px;
+    font-size: 15px;
+}
+
+.form-message.error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 12px;
+    border-left: 5px solid #dc3545;
+    border-radius: 4px;
+    margin-top: 20px;
+    font-size: 15px;
+}
+
+/* === FILAS DE COLUMNAS === */
+.form-columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 40px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #eee;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 1023px) {
+    .feasy-form {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .form-group,
+    .single-choice-group,
+    .checkbox-single-group {
+        flex: 1 1 100%;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+
+    .form-option {
+        width: 100%;
+        margin-right: 0;
+    }
+
+    .form-section-title {
+        font-size: 16px;
+    }
+
+    .form-columns {
+        flex-direction: column;
+        gap: 0;
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 25px;
+    }
+}
+
+/* === SLIDE-IN FORM PANEL === */
+.feasy-slide-form {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: white;
+    box-shadow: -8px 0 20px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateX(100%);
+    transition: transform 0.4s ease-in-out, opacity 0.3s ease-in-out;
+    z-index: 9999;
+    flex-direction: column;
+    max-width: none;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    border-radius: 0;
+}
+
+    .feasy-slide-form.open {
+        transform: translateX(0);
+        visibility: visible;
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+.feasy-slide-inner {
+    padding: 30px;
+    flex-grow: 1;
+    width: 100%;
+    max-width: none;
+    margin: 0 auto;
+}
+
+/* === BOTÓN DE CIERRE === */
+.feasy-close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    position: sticky;
+    top: 10px;
+    right: 10px;
+    margin-left: auto;
+    display: block;
+    cursor: pointer;
+    color: #333;
+    z-index: 100;
+    padding: 10px;
+    background-color: white;
+    border-radius: 50%;
+    line-height: 1;
+    height: 48px;
+    width: 48px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .feasy-close-btn:hover {
+        color: #000;
+        background-color: #f2f2f2;
+    }
+
+/* === BOTÓN DASHBOARD CON ÍCONO CIRCULAR === */
+.feasy-slide-trigger {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    margin: 20px auto;
+    width: 100%;
+    max-width: 160px;
+}
+
+    .feasy-slide-trigger:focus,
+    .feasy-slide-trigger:focus-visible,
+    .feasy-slide-trigger:hover,
+    .feasy-slide-trigger:active {
+        background-color: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        outline: none;
+    }
+
+    .feasy-slide-trigger .feasy-icon-circle {
+        width: 80px;
+        height: 80px;
+        background-color: #b5dbf1;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+        .feasy-slide-trigger .feasy-icon-circle img {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+        }
+
+    .feasy-slide-trigger .feasy-label {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-weight: bold;
+        font-size: 14px;
+        color: #555;
+    }
+
+/* === COLUMNAS EN ESCRITORIO === */
+@media (min-width: 1024px) {
+    .feasy-slide-inner .feasy-form {
+        max-width: 1200px;
+        width: 95%;
+        margin: 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+        .feasy-slide-inner .feasy-form .form-group {
+            flex: 1 1 30%;
+            min-width: 280px;
+        }
+
+            .feasy-slide-inner .feasy-form .form-group.full-width,
+            .feasy-slide-inner .feasy-form .single-choice-group,
+            .feasy-slide-inner .feasy-form .checkbox-single-group {
+                flex: 1 1 100%;
+                max-width: 100%;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+        .feasy-slide-inner .feasy-form .form-label {
+            margin-bottom: 8px;
+        }
+
+        .feasy-slide-inner .feasy-form .form-option {
+            white-space: nowrap;
+            margin-right: 15px;
+        }
+
+        .feasy-slide-inner .feasy-form .form-section-title {
+            flex: 1 1 100%;
+        }
+
+        .feasy-slide-inner .feasy-form .form-submit-row {
+            flex: 1 1 100% !important;
+            justify-content: flex-start !important;
+            padding-left: 15px !important;
+            margin-top: 30px !important;
+        }
+
+            .feasy-slide-inner .feasy-form .form-submit-row button {
+                margin: 0 !important;
+                padding: 10px 24px !important;
+            }
+}
+
+/* === GRID DE BOTONES DE FORMULARIO === */
+.feasy-button-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    justify-items: center;
+    margin: 30px auto;
+    padding: 10px 15px;
+    max-width: 100%;
+}
+
+/* Tablet: 3 botones por fila */
+@media (max-width: 1023px) {
+    .feasy-button-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Móvil: 2 botones por fila + centrado si impar */
+@media (max-width: 767px) {
+    .feasy-button-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+        .feasy-button-grid > *:last-child:nth-child(odd) {
+            grid-column: 1 / -1;
+            justify-self: center;
+        }
+
+    .feasy-form {
+        padding-bottom: 80px;
+    }
+
+    .form-submit-row {
+        padding-bottom: 20px !important;
+        margin-bottom: 40px !important;
+    }
+
+    .form-message.success,
+    .form-message.error {
+        margin-bottom: 40px;
+    }
+}
+
+/* === NUEVAS REGLAS PARA SPINNER Y LOADERS === */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(0,0,0,0.1);
+    border-top-color: #007BFF;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 20px;
+}
+
+.form-loading,
+.form-submit-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border: 1px solid #e1e5eb;
+    border-radius: 12px;
+    padding: 40px 30px;
+    margin: 30px auto;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+    .form-loading span,
+    .form-submit-loading span {
+        font-size: 16px;
+        color: #333;
+        line-height: 1.6;
+    }
+
+.countdown-timer {
+    font-size: 14px;
+    color: #666;
+    margin-top: 10px;
+}
+
+.form-info-summary {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #444;
+    background-color: #f0f4f8;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    text-align: left;
+}
+
+.checkmark-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.checkmark {
+    width: 72px;
+    height: 72px;
+    stroke: #28a745;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    background: none;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.checkmark-circle {
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    animation: drawCircle 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.checkmark-check {
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: drawCheck 0.4s cubic-bezier(0.65, 0, 0.45, 1) 0.6s forwards;
+}
+
+@keyframes drawCircle {
+    0% {
+        stroke-dashoffset: 166;
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    100% {
+        stroke-dashoffset: 0;
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes drawCheck {
+    from {
+        stroke-dashoffset: 48;
+        opacity: 0;
+    }
+
+    to {
+        stroke-dashoffset: 0;
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Oculta todos los campos condicionales por defecto */
+[data-conditional] {
+    display: none;
+}
+
+.feasy-debug-missing {
+    background: #fee;
+    color: #900;
+    padding: 5px 10px;
+    margin-bottom: 10px;
+    border: 1px solid #f99;
+    font-size: 14px;
+}
+
+.feasy-missing-field {
+    outline: 2px dashed red !important;
+}
+
+.feasy-image-preview {
+    display: none;
+    width: auto;
+    height: auto;
+    margin-top: 10px;
+    max-width: 100%;
+    max-height: 40vh;
+    object-fit: contain;
+}
+
+@media (min-width: 1024px) {
+    .feasy-image-preview {
+        max-width: 400px;
+    }
+}
+
+.feasy-image-wrapper {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.feasy-image-upload {
+    background-color: #007BFF;
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-block;
+    margin-bottom: 10px;
+    font-size: 14px;
+    border: none;
+}
+
+.feasy-image-file {
+    display: none;
+}
+
+.feasy-preview-container {
+    display: inline-block;
+    overflow: visible;
+}
+
+.feasy-image-remove {
+    position: absolute;
+    bottom: 1em;
+    right: 1em;
+    /* Tamaño fluido: mínimo 36px, ideal 6vw, máximo 56px */
+    width: clamp(36px, 6vw, 56px);
+    height: clamp(36px, 6vw, 56px);
+    border: none;
+    border-radius: 50%;
+    background-color: #fff;
+    background-image: url('../assets/icons/trash.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 60% 60%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    cursor: pointer;
+    display: none; /* lo seguimos ocultando por defecto */
+    align-items: center; /* para centrar el icono si usas flex */
+    justify-content: center;
+    transition: transform .1s ease, box-shadow .2s ease;
+}
+
+/* Mostrarlo sólo cuando haya imagen cargada */
+.feasy-preview-container img[src]:not([src=""]) + .feasy-image-remove {
+    display: inline-flex;
+}
+
+/* 3) Hover ligero (fondo claro), mantenemos el icono intacto */
+@media (hover: hover) and (pointer: fine) {
+    .feasy-image-remove:hover {
+        background-color: #f2f2f2;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        transform: scale(1.1);
+    }
+}
+
+/* 4) Touch-target ampliado en móviles */
+@media (max-width: 767px) {
+    .feasy-image-remove {
+        width: 56px;
+        height: 56px;
+        bottom: 8px;
+        right: 8px;
+        background-size: 70% 70%;
+    }
+}
