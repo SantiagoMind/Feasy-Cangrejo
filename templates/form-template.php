@@ -28,9 +28,21 @@ $logic_json = esc_attr(wp_json_encode($logic));
     <?php wp_nonce_field('proyecto_cangrejo_form', 'cangrejo_nonce'); ?>
 
     <!-- Render dinámico de campos -->
-    <?php foreach ($config['fields'] as $field): ?>
-        <?php echo cangrejo_render_field($field); ?>
-    <?php endforeach; ?>
+    <?php
+    $visible_fields = [];
+    foreach ($config['fields'] as $field) {
+        if (!empty($field['hidden'])) {
+            echo cangrejo_render_field($field);
+            continue;
+        }
+        $visible_fields[] = $field;
+    }
+    ?>
+    <div class="form-columns">
+        <?php foreach ($visible_fields as $field): ?>
+            <?php echo cangrejo_render_field($field); ?>
+        <?php endforeach; ?>
+    </div>
 
     <!-- Botón con clase para aplicar el CSS -->
     <div class="form-submit-row">

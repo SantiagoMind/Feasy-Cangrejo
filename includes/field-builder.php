@@ -58,7 +58,17 @@ if (!function_exists('cangrejo_render_field')) {
         }
 
         // Iniciar columna y grupo con data-conditional si aplica
-        $html .= '<div class="form-columns"><div class="form-group"' . $conditionalAttr . '>';
+        // Determinar clases adicionales para el grupo del campo
+        $groupClasses = ['form-group'];
+
+        // Algunos campos como textarea o grupos de opciones suelen ocupar todo el ancho
+        $fullWidthTypes = ['textarea', 'radio', 'checkbox_single', 'checkbox', 'image'];
+        if (!empty($field['full_width']) || in_array($field['type'], $fullWidthTypes, true)) {
+            $groupClasses[] = 'form-group--full';
+        }
+
+        // Iniciar grupo con atributos condicionales y dinmicos si aplica
+        $html .= '<div class="' . implode(' ', array_map('esc_attr', $groupClasses)) . '"' . $conditionalAttr . '>';
 
         switch ($field['type']) {
             case 'user_name':
@@ -254,7 +264,7 @@ if (!function_exists('cangrejo_render_field')) {
                 break;
         }
 
-        $html .= '</div></div>';
+        $html .= '</div>';
 
         if (!empty($field['name'])) {
             error_log('HTML generado para el campo: ' . $field['name'] . PHP_EOL . $html . PHP_EOL);

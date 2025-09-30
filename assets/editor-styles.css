@@ -3,12 +3,14 @@
    =============================== */
 
 .feasy-editor {
-    max-width: 1000px;
-    margin: auto;
-    padding: 40px 20px;
+    max-width: 1180px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 40px 32px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #333;
     background: #f4f7fa;
+    box-sizing: border-box;
 }
 
     /* Títulos */
@@ -56,29 +58,73 @@
 
     /* Bloques de campos */
     .feasy-editor .field-wrapper {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        padding: 15px;
+        display: grid;
+        grid-template-columns: 36px repeat(5, minmax(150px, 1fr)) auto;
+        gap: 12px;
+        align-items: start;
+        padding: 18px 20px;
         margin-bottom: 20px;
-        background: #fefefe;
+        background: #fff;
+        border: 1px solid #dbe4ef;
         border-left: 5px solid #0073aa;
-        border-radius: 6px;
-        transition: background 0.3s;
+        border-radius: 8px;
+        transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+        box-shadow: 0 2px 6px rgba(17, 34, 68, 0.05);
     }
 
         .feasy-editor .field-wrapper:hover {
-            background: #f3faff;
+            background: #f8fbff;
+            border-color: #c5d8ee;
+            box-shadow: 0 6px 16px rgba(17, 34, 68, 0.08);
         }
 
         /* Inputs y selects */
         .feasy-editor .field-wrapper input,
         .feasy-editor .field-wrapper select {
-            padding: 8px 12px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
             font-size: 0.95rem;
-            min-width: 140px;
+            background: #fdfdfd;
+        }
+
+            .feasy-editor .field-wrapper input:focus,
+            .feasy-editor .field-wrapper select:focus {
+                outline: none;
+                border-color: #0073aa;
+                box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.15);
+            }
+
+        .feasy-editor .field-wrapper .drag-handle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            padding: 4px;
+            border-radius: 4px;
+            background: transparent;
+            transition: background 0.2s ease, opacity 0.2s ease;
+            opacity: 0.75;
+        }
+
+            .feasy-editor .field-wrapper .drag-handle:hover {
+                opacity: 1;
+                background: rgba(0, 115, 170, 0.08);
+            }
+
+            .feasy-editor .field-wrapper .drag-handle img {
+                width: 16px;
+                height: 16px;
+                display: block;
+            }
+
+        .feasy-editor .field-wrapper .name-error {
+            grid-column: 2 / span 5;
+            margin-top: -4px;
+        }
+
+        .feasy-editor .field-wrapper .button-link-delete {
+            justify-self: end;
         }
 
     /* Campos con error */
@@ -122,24 +168,34 @@
         }
 
     .feasy-editor .button-link-delete {
-        background: #c2185b;
-        color: white;
+        background: #d63638;
+        color: #fff;
         border: none;
-        padding: 8px 12px;
+        padding: 8px 14px;
         font-size: 0.9rem;
-        border-radius: 4px;
+        border-radius: 6px;
         cursor: pointer;
-        transition: background 0.3s;
+        transition: background 0.2s ease, transform 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
 
         .feasy-editor .button-link-delete:hover {
-            background: #ad1457;
+            background: #b32d2e;
+            transform: translateY(-1px);
         }
 
-/* Responsive */
+        .feasy-editor .button-link-delete img {
+            filter: brightness(0) invert(1);
+        }
+
 @media (max-width: 768px) {
     .feasy-editor .field-wrapper {
+        display: flex;
         flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
     }
 
         .feasy-editor .field-wrapper input,
@@ -176,97 +232,12 @@
     border: 2px dashed #0073aa;
 }
 
-/* ===============================
-   🎨 Feasy Editor — Full width
-   =============================== */
-.feasy-editor {
-    /* quito el max-width fijo y los márgenes auto */
-    max-width: none;
-    width: 100%;
-    margin: 0;
-    padding: 40px 20px; /* si quieres, ajusta el padding */
-}
-
-    /* Asegurar que el contenedor interno también escale */
-    .feasy-editor #feasy-form-builder-container {
-        max-width: none;
-        width: 100%;
-    }
-
-    /* ===============================
-   🎨 Botón “Eliminar” más suave
-   =============================== */
-    /* fondo gris neutro en lugar de rojo chillón */
-    .feasy-editor .button-link-delete {
-        background: #777; /* gris medio */
-        color: white; /* conservar texto/iconos claros */
-        transition: background 0.3s;
-    }
-
-        /* hover ligeramente más oscuro */
-        .feasy-editor .button-link-delete:hover {
-            background: #555;
-        }
-
-        /* Invierto/aclarezco el SVG para que se vea blanco */
-        .feasy-editor .button-link-delete img {
-            filter: brightness(0) invert(1);
-        }
-
-        /* Opcional: ajustar el tamaño del icono para que no parezca gigante */
-        .feasy-editor .button-link-delete img {
-            width: 16px;
-            height: 16px;
-        }
-
-/* full width en escritorio */
-.feasy-editor {
-    max-width: none;
-    width: 100%;
-    margin: 0;
-}
 /* pista de drag */
 .feasy-drag-hint {
     font-size: 0.9rem;
     color: #555;
     margin-bottom: 1em;
 }
-/* botón delete más neutro */
-.feasy-editor .button-link-delete {
-    background: #777;
-}
-
-    .feasy-editor .button-link-delete:hover {
-        background: #555;
-    }
-
-    .feasy-editor .button-link-delete img {
-        filter: brightness(0) invert(1);
-    }
-
-/* ===============================
-   🎨 Feasy Editor — Drag Handle
-   =============================== */
-/* El icono que indica “arrastra aquí” */
-.feasy-editor .drag-handle {
-    cursor: grab; /* puntero de “agarre” */
-    display: inline-flex; /* para centrar el ícono */
-    align-items: center;
-    padding: 4px;
-    margin-right: 8px; /* separa del input */
-    opacity: 0.7; /* ligeramente atenuado */
-    transition: opacity 0.2s;
-}
-
-    .feasy-editor .drag-handle:hover {
-        opacity: 1; /* resalta al pasar el ratón */
-    }
-
-    .feasy-editor .drag-handle img {
-        width: 16px;
-        height: 16px;
-        display: block; /* eliminar espacios blancos */
-    }
 
 /* 🔁 Spinner reutilizable en overlays o secciones */
 .feasy-spinner-container {
@@ -334,10 +305,36 @@
         max-width: 320px;
         margin-top: 0;
     }
+}
 
-    .feasy-editor .field-wrapper {
-        align-items: flex-start; /* Alinea campos verticalmente en filas */
+@media (max-width: 1180px) {
+    .feasy-editor {
+        padding: 32px 24px;
     }
+}
+
+@media (max-width: 1024px) {
+    .feasy-editor .field-wrapper {
+        grid-template-columns: 32px repeat(2, minmax(160px, 1fr)) auto;
+    }
+
+        .feasy-editor .field-wrapper .name-error {
+            grid-column: 2 / span 2;
+        }
+}
+
+@media (max-width: 782px) {
+    .feasy-editor {
+        padding: 24px 16px;
+    }
+
+        .feasy-editor .field-wrapper .name-error {
+            margin-top: 0;
+        }
+
+        .feasy-editor .field-wrapper .button-link-delete {
+            align-self: flex-end;
+        }
 }
 
 /* Opcional: enfoque visible */
