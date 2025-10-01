@@ -28,6 +28,63 @@ function feasy_generate_auth_token($secret) {
 }
 
 /**
+ * Interpreta valores devueltos por Apps Script (u otros endpoints) como bandera de éxito.
+ *
+ * Devuelve true si el valor representa éxito, false si representa un fallo,
+ * y null si no puede determinarse con certeza.
+ */
+function feasy_interpret_remote_status($value) {
+    if (is_bool($value)) {
+        return $value;
+    }
+
+    if (is_numeric($value)) {
+        return intval($value) === 1 ? true : (intval($value) === 0 ? false : null);
+    }
+
+    if (is_string($value)) {
+        $normalized = strtolower(trim($value));
+        if ($normalized === '') {
+            return null;
+        }
+
+        $truthy = ['success', 'ok', 'done', 'true', '1', 'yes'];
+        $falsy  = ['error', 'fail', 'failed', 'false', '0', 'no'];
+
+        if (in_array($normalized, $truthy, true)) {
+            return true;
+        }
+
+        if (in_array($normalized, $falsy, true)) {
+            return false;
+        }
+
+        return null;
+    }
+
+    return null;
+}
+
+/**
+ * Normaliza cadenas JSON provenientes de servicios externos eliminando BOM y caracteres de control.
+ */
+function feasy_normalize_remote_body($body) {
+    if (!is_string($body) || $body === '') {
+        return $body;
+    }
+
+    // Elimina BOM UTF-8 si está presente.
+    if (substr($body, 0, 3) === "\xEF\xBB\xBF") {
+        $body = substr($body, 3);
+    }
+
+    // Quita caracteres de control no permitidos en JSON (excepto saltos de línea y tabulaciones).
+    $body = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $body);
+
+    return trim($body);
+}
+
+/**
  * Almacena los datos del formulario que no pudieron enviarse.
  */
 function feasy_store_failed_submission($data) {
@@ -37,9 +94,29 @@ function feasy_store_failed_submission($data) {
     }
 
     $file = sprintf('%s/submission_%s.json', $dir, time() . '_' . uniqid());
-    file_put_contents($file, wp_json_encode($data));
+    file_put_contents($file, feasy_wp_json_encode($data));
 
     error_log('[Feasy] Datos de envío guardados en: ' . $file);
+}
+
+/**
+ * Wrapper para codificar JSON igual que el receptor (JSON.stringify en Apps Script)
+ * y evitar las conversiones JSON_HEX_* que aplica WordPress por defecto.
+ */
+if (!function_exists('feasy_wp_json_encode')) {
+    function feasy_wp_json_encode($data) {
+        $options = 0;
+
+        if (defined('JSON_UNESCAPED_UNICODE')) {
+            $options |= JSON_UNESCAPED_UNICODE;
+        }
+
+        if (defined('JSON_UNESCAPED_SLASHES')) {
+            $options |= JSON_UNESCAPED_SLASHES;
+        }
+
+        return wp_json_encode($data, $options);
+    }
 }
 
 /**
@@ -135,6 +212,7 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
 
     // Body for logging/validation
     $response_body = wp_remote_retrieve_body($response);
+    $normalized_body = feasy_normalize_remote_body($response_body);
 
     if (is_wp_error($response)) {
         feasy_store_failed_submission($data);
@@ -155,30 +233,75 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
         wp_die();
     }
 
-    $remote_json = json_decode($response_body, true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        feasy_store_failed_submission($data);
-        error_log('Respuesta JSON inválida: ' . json_last_error_msg());
-        $feasy_shutdown['sent'] = true;
-        header('Content-Type: application/json; charset=utf-8');
-        wp_send_json_error(['message' => 'Respuesta no válida del servidor']);
-        wp_die();
-    }
+    $remote_json = json_decode($normalized_body, true);
+    $json_error  = json_last_error();
+    $success_message = 'Formulario enviado correctamente';
 
-    if (is_array($remote_json) && isset($remote_json['status']) && $remote_json['status'] !== 'success') {
-        feasy_store_failed_submission($data);
-        $msg = isset($remote_json['message']) ? $remote_json['message'] : 'Error al enviar los datos.';
-        error_log('Error reportado por endpoint: ' . $msg);
-        $feasy_shutdown['sent'] = true;
-        header('Content-Type: application/json; charset=utf-8');
-        wp_send_json_error(['message' => $msg]);
-        wp_die();
+    if ($json_error === JSON_ERROR_NONE) {
+        if (is_array($remote_json)) {
+            if (isset($remote_json['message']) && is_string($remote_json['message'])) {
+                $success_message = $remote_json['message'];
+            }
+
+            $status_keys = ['status', 'success', 'ok', 'result'];
+            $status_value = null;
+
+            foreach ($status_keys as $key) {
+                if (array_key_exists($key, $remote_json)) {
+                    $status_value = $remote_json[$key];
+                    break;
+                }
+            }
+
+            if ($status_value !== null) {
+                $status_flag = feasy_interpret_remote_status($status_value);
+
+                if ($status_flag === false) {
+                    feasy_store_failed_submission($data);
+                    $msg = isset($remote_json['message']) ? $remote_json['message'] : 'Error al enviar los datos.';
+                    error_log('Error reportado por endpoint: ' . $msg);
+                    $feasy_shutdown['sent'] = true;
+                    header('Content-Type: application/json; charset=utf-8');
+                    wp_send_json_error(['message' => $msg]);
+                    wp_die();
+                }
+
+                if ($status_flag === null) {
+                    error_log('[Feasy] Aviso: estado remoto no reconocido: ' . print_r($status_value, true));
+                }
+            }
+        } elseif (is_string($remote_json)) {
+            $trimmed = trim($remote_json);
+            if ($trimmed !== '') {
+                if (stripos($trimmed, 'success') !== false || stripos($trimmed, 'éxito') !== false || stripos($trimmed, 'exito') !== false) {
+                    $success_message = $trimmed;
+                }
+            }
+        }
+    } else {
+        $trimmed_body = trim($normalized_body);
+        if ($trimmed_body === ''
+            || stripos($trimmed_body, 'success') !== false
+            || stripos($trimmed_body, 'éxito') !== false
+            || stripos($trimmed_body, 'exito') !== false
+            || stripos($trimmed_body, 'correctamente') !== false) {
+            if ($trimmed_body !== '') {
+                $success_message = $trimmed_body;
+            }
+        } else {
+            feasy_store_failed_submission($data);
+            error_log('Respuesta JSON inválida: ' . json_last_error_msg() . '. Cuerpo recibido: ' . $trimmed_body);
+            $feasy_shutdown['sent'] = true;
+            header('Content-Type: application/json; charset=utf-8');
+            wp_send_json_error(['message' => 'Respuesta no válida del servidor']);
+            wp_die();
+        }
     }
 
     // ✅ Éxito: marcar envío y devolver respuesta JSON para el frontend (JS)
     $feasy_shutdown['sent'] = true;
     header('Content-Type: application/json; charset=utf-8');
-    wp_send_json_success(['message' => 'Formulario enviado correctamente']);
+    wp_send_json_success(['message' => $success_message]);
     wp_die(); // ✅ Detener ejecución completamente
 }
 
