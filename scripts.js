@@ -533,10 +533,14 @@ onReady(() => {
                     }
                     sendingPanel.style.pointerEvents = 'none';
                 } else {
-                    const errorMessage = data?.data?.message
+                    const details = data?.data?.details;
+                    let errorMessage = data?.data?.message
                         || data?.message
                         || data?.status
                         || 'Submission error';
+                    if (details) {
+                        errorMessage = `${errorMessage} (${details})`;
+                    }
                     sendingPanel.querySelector('.error-placeholder')
                         .textContent = errorMessage;
                     f.style.display = '';

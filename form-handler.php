@@ -225,7 +225,10 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
         error_log('Error al enviar datos al endpoint: ' . $response->get_error_message());
         $feasy_shutdown['sent'] = true;
         header('Content-Type: application/json; charset=utf-8');
-        wp_send_json_error(['message' => 'Error al enviar los datos.']);
+        wp_send_json_error([
+            'message' => 'Error al enviar los datos.',
+            'details' => $response->get_error_message(),
+        ]);
         wp_die();
     }
 
