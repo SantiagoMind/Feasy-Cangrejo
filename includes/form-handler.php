@@ -257,25 +257,38 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
         $message = 'Datos agregados correctamente.';
     }
 
+    $status_keys  = ['status', 'success', 'ok', 'result'];
+    $status_found = false;
     $status_value = null;
-    if (array_key_exists('status', $remote_json)) {
-        $status_value = is_string($remote_json['status'])
-            ? trim($remote_json['status'])
-            : $remote_json['status'];
+
+    foreach ($status_keys as $key) {
+        if (array_key_exists($key, $remote_json)) {
+            $status_value = $remote_json[$key];
+            $status_found = true;
+            break;
+        }
     }
 
-    if ($status_value === 'success') {
-        $feasy_shutdown['sent'] = true;
-        header('Content-Type: application/json; charset=utf-8');
-        wp_send_json_success(['message' => $message]);
-        wp_die();
+    if ($status_found) {
+        $status_flag = feasy_interpret_remote_status($status_value);
+
+        if ($status_flag === false) {
+            feasy_store_failed_submission($data);
+            error_log('[Feasy] Error reportado por endpoint: ' . $message);
+            $feasy_shutdown['sent'] = true;
+            header('Content-Type: application/json; charset=utf-8');
+            wp_send_json_error(['message' => $message ?: 'Error al enviar los datos.']);
+            wp_die();
+        }
+
+        if ($status_flag === null) {
+            error_log('[Feasy] Aviso: estado remoto no reconocido: ' . print_r($status_value, true));
+        }
     }
 
-    // Cualquier otro caso es error
-    feasy_store_failed_submission($data);
     $feasy_shutdown['sent'] = true;
     header('Content-Type: application/json; charset=utf-8');
-    wp_send_json_error(['message' => $message ?: 'Error al enviar los datos.']);
+    wp_send_json_success(['message' => $message]);
     wp_die();
 }
 

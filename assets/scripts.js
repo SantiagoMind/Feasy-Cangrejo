@@ -498,11 +498,17 @@ onReady(() => {
         fetch(f.getAttribute('action'), { method: 'POST', body: fd })
             .then(r => {
                 const ct = r.headers.get('content-type') || '';
-                if (ct.includes('application/json')) return r.json();
-                return Promise.reject('Invalid content type');
+                if (!ct.includes('application/json')) {
+                    return Promise.reject('Invalid content type');
+                }
+                return r.json().then(data => ({ data, ok: r.ok }));
             })
-            .then(data => {
-                if (data.success) {
+            .then(({ data, ok }) => {
+                const isSuccess = data?.success === true
+                    || data?.status === 'success'
+                    || (ok && data && !('success' in data) && !('status' in data));
+
+                if (isSuccess) {
                     f.reset();
                     sendingPanel.innerHTML = `
                         <div class="checkmark-container">
@@ -517,10 +523,22 @@ onReady(() => {
                             <span><strong>Submitted at:</strong> ${formattedDate}</span>
                         </div>
                     `;
+                    if (data?.message) {
+                        const summary = sendingPanel.querySelector('.form-info-summary');
+                        if (summary) {
+                            const msg = document.createElement('span');
+                            msg.textContent = data.message;
+                            summary.appendChild(msg);
+                        }
+                    }
                     sendingPanel.style.pointerEvents = 'none';
                 } else {
+                    const errorMessage = data?.data?.message
+                        || data?.message
+                        || data?.status
+                        || 'Submission error';
                     sendingPanel.querySelector('.error-placeholder')
-                        .textContent = data?.data?.message || 'Submission error';
+                        .textContent = errorMessage;
                     f.style.display = '';
                 }
             })
