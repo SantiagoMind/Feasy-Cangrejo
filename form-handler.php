@@ -257,14 +257,20 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
         $message = 'Datos agregados correctamente.';
     }
 
-    $status_keys  = ['status', 'success', 'ok', 'result'];
-    $status_found = false;
-    $status_value = null;
+    $status_keys   = ['status', 'success', 'ok', 'result'];
+    $status_found  = false;
+    $status_value  = null;
+    $normalized    = '';
 
     foreach ($status_keys as $key) {
         if (array_key_exists($key, $remote_json)) {
             $status_value = $remote_json[$key];
             $status_found = true;
+
+            if (is_string($status_value)) {
+                $normalized = strtolower(trim($status_value));
+            }
+
             break;
         }
     }
@@ -272,13 +278,38 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     if ($status_found) {
         $status_flag = feasy_interpret_remote_status($status_value);
 
+        if ($status_flag === true) {
+            $feasy_shutdown['sent'] = true;
+
+            $payload = [
+                'status'  => $normalized === '' ? 'success' : $normalized,
+                'message' => $message,
+            ];
+
+            foreach (['data', 'payload', 'details'] as $extra_key) {
+                if (isset($remote_json[$extra_key])) {
+                    $payload[$extra_key] = $remote_json[$extra_key];
+                }
+            }
+
+            wp_send_json($payload);
+        }
+
         if ($status_flag === false) {
             feasy_store_failed_submission($data);
             error_log('[Feasy] Error reportado por endpoint: ' . $message);
             $feasy_shutdown['sent'] = true;
-            header('Content-Type: application/json; charset=utf-8');
-            wp_send_json_error(['message' => $message ?: 'Error al enviar los datos.']);
-            wp_die();
+
+            $payload = [
+                'status'  => $normalized === '' ? 'error' : $normalized,
+                'message' => $message ?: 'Error al enviar los datos.',
+            ];
+
+            if (!empty($remote_json)) {
+                $payload['details'] = $remote_json;
+            }
+
+            wp_send_json($payload, 400);
         }
 
         if ($status_flag === null) {
@@ -287,9 +318,10 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     }
 
     $feasy_shutdown['sent'] = true;
-    header('Content-Type: application/json; charset=utf-8');
-    wp_send_json_success(['message' => $message]);
-    wp_die();
+    wp_send_json_success([
+        'status'  => 'success',
+        'message' => $message,
+    ]);
 }
 
 // Registrar la acción AJAX (logueados y no logueados)
