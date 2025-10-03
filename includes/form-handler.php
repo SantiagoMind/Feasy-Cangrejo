@@ -100,6 +100,31 @@ function feasy_store_failed_submission($data) {
 }
 
 /**
+ * Determina si un WP_Error está relacionado con un timeout en la solicitud HTTP.
+ */
+function feasy_is_timeout_error($error) {
+    if (!($error instanceof WP_Error)) {
+        return false;
+    }
+
+    foreach ($error->get_error_codes() as $code) {
+        $code = strtolower((string) $code);
+        if ($code === 'request_timed_out' || strpos($code, 'timeout') !== false) {
+            return true;
+        }
+    }
+
+    foreach ($error->get_error_messages() as $message) {
+        $message = strtolower((string) $message);
+        if (strpos($message, 'timed out') !== false || strpos($message, 'timeout') !== false) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Wrapper para codificar JSON igual que el receptor (JSON.stringify en Apps Script)
  * y evitar las conversiones JSON_HEX_* que aplica WordPress por defecto.
  */
@@ -208,24 +233,49 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     }
 
     // Enviar los datos al endpoint de Google Apps Script
-    $response = wp_remote_post($endpoint_url, [
+    $request_args = [
         'method'  => 'POST',
         'headers' => $headers,
         'body'    => $body,
-        // Aumentar tiempo de espera para envíos con imágenes base64 pesadas
-        'timeout' => 40,
-    ]);
+        // Tiempo de espera extendido para cargas con imágenes base64 pesadas
+        'timeout' => apply_filters('feasy_remote_timeout', 60, $endpoint_url, $data),
+    ];
+
+    $request_args = apply_filters('feasy_remote_request_args', $request_args, $endpoint_url, $data);
+
+    $response = wp_remote_post($endpoint_url, $request_args);
 
     // Body for logging/validation
     $response_body   = wp_remote_retrieve_body($response);
     $normalized_body = feasy_normalize_remote_body($response_body);
 
-    if (is_wp_error($response)) {
+     if (is_wp_error($response)) {
+        if (feasy_is_timeout_error($response)) {
+            feasy_store_failed_submission($data);
+            $feasy_shutdown['sent'] = true;
+
+            $timeout_seconds = isset($request_args['timeout']) ? intval($request_args['timeout']) : 0;
+            $timeout_message = $timeout_seconds > 0
+                ? sprintf('El endpoint tardó más de %d segundos en responder. Verifica si el envío se registró correctamente antes de reintentar.', $timeout_seconds)
+                : 'El endpoint tardó demasiado en responder. Verifica si el envío se registró correctamente antes de reintentar.';
+
+            error_log('[Feasy] Aviso timeout: ' . $response->get_error_message());
+
+            wp_send_json_success([
+                'status'  => 'timeout',
+                'message' => $timeout_message,
+                'details' => $response->get_error_message(),
+            ]);
+        }
+
         feasy_store_failed_submission($data);
         error_log('Error al enviar datos al endpoint: ' . $response->get_error_message());
         $feasy_shutdown['sent'] = true;
         header('Content-Type: application/json; charset=utf-8');
-        wp_send_json_error(['message' => 'Error al enviar los datos.']);
+        wp_send_json_error([
+            'message' => 'Error al enviar los datos.',
+            'details' => $response->get_error_message(),
+        ]);
         wp_die();
     }
 
@@ -257,14 +307,20 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
         $message = 'Datos agregados correctamente.';
     }
 
-    $status_keys  = ['status', 'success', 'ok', 'result'];
-    $status_found = false;
-    $status_value = null;
+    $status_keys   = ['status', 'success', 'ok', 'result'];
+    $status_found  = false;
+    $status_value  = null;
+    $normalized    = '';
 
     foreach ($status_keys as $key) {
         if (array_key_exists($key, $remote_json)) {
             $status_value = $remote_json[$key];
             $status_found = true;
+
+            if (is_string($status_value)) {
+                $normalized = strtolower(trim($status_value));
+            }
+
             break;
         }
     }
@@ -272,13 +328,38 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     if ($status_found) {
         $status_flag = feasy_interpret_remote_status($status_value);
 
+        if ($status_flag === true) {
+            $feasy_shutdown['sent'] = true;
+
+            $payload = [
+                'status'  => $normalized === '' ? 'success' : $normalized,
+                'message' => $message,
+            ];
+
+            foreach (['data', 'payload', 'details'] as $extra_key) {
+                if (isset($remote_json[$extra_key])) {
+                    $payload[$extra_key] = $remote_json[$extra_key];
+                }
+            }
+
+            wp_send_json($payload);
+        }
+
         if ($status_flag === false) {
             feasy_store_failed_submission($data);
             error_log('[Feasy] Error reportado por endpoint: ' . $message);
             $feasy_shutdown['sent'] = true;
-            header('Content-Type: application/json; charset=utf-8');
-            wp_send_json_error(['message' => $message ?: 'Error al enviar los datos.']);
-            wp_die();
+
+            $payload = [
+                'status'  => $normalized === '' ? 'error' : $normalized,
+                'message' => $message ?: 'Error al enviar los datos.',
+            ];
+
+            if (!empty($remote_json)) {
+                $payload['details'] = $remote_json;
+            }
+
+            wp_send_json($payload, 400);
         }
 
         if ($status_flag === null) {
@@ -287,9 +368,10 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     }
 
     $feasy_shutdown['sent'] = true;
-    header('Content-Type: application/json; charset=utf-8');
-    wp_send_json_success(['message' => $message]);
-    wp_die();
+    wp_send_json_success([
+        'status'  => 'success',
+        'message' => $message,
+    ]);
 }
 
 // Registrar la acción AJAX (logueados y no logueados)

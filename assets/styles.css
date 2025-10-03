@@ -564,6 +564,22 @@
         line-height: 1.6;
     }
 
+.loading-title.success {
+    color: #047857;
+}
+
+.loading-title.warning {
+    color: #b45309;
+}
+
+.timeout-details {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    color: #9a3412;
+    word-break: break-word;
+}
+
 .countdown-timer {
     font-size: 14px;
     color: #666;
