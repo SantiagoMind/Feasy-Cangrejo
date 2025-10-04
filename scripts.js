@@ -504,12 +504,19 @@ onReady(() => {
                 return r.json().then(data => ({ data, ok: r.ok }));
             })
             .then(({ data, ok }) => {
-                const isSuccess = data?.success === true
+                const successFlag = data?.success === true
                     || data?.status === 'success'
                     || (ok && data && !('success' in data) && !('status' in data));
 
-                if (isSuccess) {
+                const status = data?.status ?? (successFlag ? 'success' : null);
+                const isTimeout = status === 'timeout';
+
+                if (successFlag || isTimeout) {
                     f.reset();
+                    const titleText = isTimeout
+                        ? 'Form submitted (slow response)'
+                        : 'Form submitted successfully';
+                    const titleClass = isTimeout ? 'warning' : 'success';
                     sendingPanel.innerHTML = `
                         <div class="checkmark-container">
                             <svg class="checkmark" viewBox="0 0 52 52">
@@ -517,7 +524,7 @@ onReady(() => {
                                 <path class="checkmark-check" fill="none" d="M14 27l7 7 17-17"/>
                             </svg>
                         </div>
-                        <span class="loading-title success">Form submitted successfully</span>
+                        <span class="loading-title ${titleClass}">${titleText}</span>
                         <div class="form-info-summary">
                             <span><strong>Form:</strong> ${formTitle}</span>
                             <span><strong>Submitted at:</strong> ${formattedDate}</span>
@@ -529,6 +536,15 @@ onReady(() => {
                             const msg = document.createElement('span');
                             msg.textContent = data.message;
                             summary.appendChild(msg);
+                        }
+                    }
+                    if (isTimeout && data?.details) {
+                        const summary = sendingPanel.querySelector('.form-info-summary');
+                        if (summary) {
+                            const warn = document.createElement('span');
+                            warn.className = 'timeout-details';
+                            warn.textContent = data.details;
+                            summary.appendChild(warn);
                         }
                     }
                     sendingPanel.style.pointerEvents = 'none';
