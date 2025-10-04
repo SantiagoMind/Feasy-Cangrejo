@@ -489,6 +489,24 @@ onReady(() => {
         toast.style.display = 'none';
 
         const fd = new FormData(f);
+        const debugFormData = {};
+        try {
+            fd.forEach((value, key) => {
+                if (!Object.prototype.hasOwnProperty.call(debugFormData, key)) {
+                    debugFormData[key] = [];
+                }
+                debugFormData[key].push(value instanceof File
+                    ? {
+                        type: 'file',
+                        name: value.name,
+                        size: value.size,
+                        mimeType: value.type
+                    }
+                    : value);
+            });
+        } catch (dbgErr) {
+            console.warn('Feasy form debug: unable to snapshot form data', dbgErr);
+        }
 
         // Adjuntar nonce de seguridad si existe
         const nonceField = f.querySelector('input[name="cangrejo_nonce"]');
@@ -557,13 +575,38 @@ onReady(() => {
                     if (details) {
                         errorMessage = `${errorMessage} (${details})`;
                     }
+                    console.groupCollapsed('🛑 Feasy form submission failure');
+                    console.error('Submission error summary:', {
+                        form: formTitle,
+                        submittedAt: formattedDate,
+                        endpoint: f.getAttribute('action'),
+                        httpOk: ok,
+                        responseStatus: data?.status ?? 'unknown',
+                        responseData: data,
+                        details,
+                        formData: debugFormData
+                    });
+                    if (Array.isArray(data?.errors) && data.errors.length) {
+                        data.errors.forEach((error, idx) => {
+                            console.error(`Error ${idx + 1}:`, error);
+                        });
+                    }
+                    console.groupEnd();
                     sendingPanel.querySelector('.error-placeholder')
                         .textContent = errorMessage;
                     f.style.display = '';
                 }
             })
             .catch(err => {
-                console.error(err);
+                console.groupCollapsed('🛑 Feasy form submission exception');
+                console.error('Unexpected exception during form submission', err);
+                console.error('Context:', {
+                    form: formTitle,
+                    submittedAt: formattedDate,
+                    endpoint: f.getAttribute('action'),
+                    formData: debugFormData
+                });
+                console.groupEnd();
                 sendingPanel.querySelector('.error-placeholder')
                     .textContent = 'Unexpected error';
                 f.style.display = '';

@@ -144,6 +144,82 @@ if (!function_exists('feasy_wp_json_encode')) {
     }
 }
 
+if (!function_exists('feasy_trim_debug_value')) {
+    function feasy_trim_debug_value($value, $limit = 600) {
+        if (is_array($value) || is_object($value)) {
+            $value = wp_json_encode($value);
+        }
+
+        if (!is_string($value)) {
+            $value = strval($value);
+        }
+
+        if ($value === '') {
+            return $value;
+        }
+
+        $has_mb = function_exists('mb_strlen') && function_exists('mb_substr');
+
+        if ($has_mb) {
+            $length = mb_strlen($value, 'UTF-8');
+            if ($length > $limit) {
+                return mb_substr($value, 0, $limit, 'UTF-8') . '…';
+            }
+            return $value;
+        }
+
+        if (strlen($value) > $limit) {
+            return substr($value, 0, $limit) . '…';
+        }
+
+        return $value;
+    }
+}
+
+if (!function_exists('feasy_extract_first_string')) {
+    function feasy_extract_first_string($value) {
+        if (is_string($value)) {
+            $value = trim(wp_strip_all_tags($value));
+            return $value === '' ? null : $value;
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                $found = feasy_extract_first_string($item);
+                if ($found !== null) {
+                    return $found;
+                }
+            }
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('feasy_parse_remote_error_message')) {
+    function feasy_parse_remote_error_message($body) {
+        if (!is_string($body) || $body === '') {
+            return '';
+        }
+
+        $decoded = json_decode($body, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            foreach (['message', 'error', 'errors', 'detail'] as $key) {
+                if (!array_key_exists($key, $decoded)) {
+                    continue;
+                }
+
+                $candidate = feasy_extract_first_string($decoded[$key]);
+                if ($candidate !== null) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return trim(wp_strip_all_tags($body));
+    }
+}
+
 /**
  * Función para procesar el envío del formulario y enviarlo a un endpoint de Google Apps Script.
  * Este handler trabaja exclusivamente con AJAX (admin-ajax.php).
@@ -250,32 +326,66 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     $normalized_body = feasy_normalize_remote_body($response_body);
 
      if (is_wp_error($response)) {
-        if (feasy_is_timeout_error($response)) {
-            feasy_store_failed_submission($data);
-            $feasy_shutdown['sent'] = true;
+        feasy_store_failed_submission($data);
 
-            $timeout_seconds = isset($request_args['timeout']) ? intval($request_args['timeout']) : 0;
-            $timeout_message = $timeout_seconds > 0
-                ? sprintf('El endpoint tardó más de %d segundos en responder. Verifica si el envío se registró correctamente antes de reintentar.', $timeout_seconds)
-                : 'El endpoint tardó demasiado en responder. Verifica si el envío se registró correctamente antes de reintentar.';
+        $error_codes = $response->get_error_codes();
+        $error_message = $response->get_error_message();
+        $log_context  = sprintf('[Feasy] Error al enviar datos al endpoint (%s): %s', $endpoint_url, $error_message);
+        error_log($log_context);
 
-            error_log('[Feasy] Aviso timeout: ' . $response->get_error_message());
-
-            wp_send_json_success([
-                'status'  => 'timeout',
-                'message' => $timeout_message,
-                'details' => $response->get_error_message(),
-            ]);
+        if (!empty($error_codes)) {
+            error_log('[Feasy] Códigos de error: ' . implode(', ', $error_codes));
         }
 
-        feasy_store_failed_submission($data);
-        error_log('Error al enviar datos al endpoint: ' . $response->get_error_message());
         $feasy_shutdown['sent'] = true;
         header('Content-Type: application/json; charset=utf-8');
-        wp_send_json_error([
+        $payload = [
             'message' => 'Error al enviar los datos.',
-            'details' => $response->get_error_message(),
-        ]);
+            'details' => [
+                'endpoint'      => $endpoint_url,
+                'error_message' => $error_message,
+            ],
+        ];
+
+        if (!empty($error_codes)) {
+            $payload['details']['error_codes'] = $error_codes;
+        }
+
+        if (!empty($normalized_body)) {
+            $payload['details']['raw_body'] = feasy_trim_debug_value($normalized_body);
+        }
+
+        wp_send_json_error($payload);
+        wp_die();
+    }
+
+    $status_code = wp_remote_retrieve_response_code($response);
+    if ($status_code >= 400) {
+        feasy_store_failed_submission($data);
+        $remote_message = feasy_parse_remote_error_message($normalized_body);
+        $fallback_msg   = sprintf('Error al enviar los datos. (HTTP %d)', $status_code);
+        $error_message  = $remote_message !== '' ? $remote_message : $fallback_msg;
+
+        error_log(sprintf('[Feasy] Respuesta no exitosa del endpoint (%s): HTTP %d. Mensaje: %s', $endpoint_url, $status_code, feasy_trim_debug_value($error_message)));
+        if ($normalized_body !== '') {
+            error_log('[Feasy] Cuerpo devuelto: ' . feasy_trim_debug_value($normalized_body));
+        }
+
+        $feasy_shutdown['sent'] = true;
+        header('Content-Type: application/json; charset=utf-8');
+        $error_details = [
+            'endpoint'    => $endpoint_url,
+            'http_status' => $status_code,
+        ];
+
+        if ($normalized_body !== '') {
+            $error_details['raw_body'] = feasy_trim_debug_value($normalized_body);
+        }
+
+        wp_send_json_error([
+            'message' => $error_message,
+            'details' => $error_details,
+        ], $status_code);
         wp_die();
     }
 
