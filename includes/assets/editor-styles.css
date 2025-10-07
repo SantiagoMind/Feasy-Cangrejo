@@ -1,0 +1,561 @@
+/* ===============================
+   🎨 Feasy Editor Visual Refinado
+   =============================== */
+
+.feasy-editor {
+    max-width: 1180px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 40px 32px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    background: #f4f7fa;
+    box-sizing: border-box;
+}
+
+    /* Títulos */
+    .feasy-editor h1,
+    .feasy-editor h2 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        color: #1e2e3e;
+        margin-top: 0;
+    }
+
+    .feasy-editor h1 {
+        font-size: 2.2rem;
+        margin-bottom: 30px;
+    }
+
+    .feasy-editor h2 {
+        font-size: 1.5rem;
+        margin: 30px 0 20px;
+    }
+
+    /* Select de formularios */
+    .feasy-editor select#feasy-form-selector {
+        width: 100%;
+        max-width: 300px;
+        padding: 10px;
+        font-size: 1rem;
+        border: 1px solid #bbb;
+        border-radius: 6px;
+        margin-bottom: 25px;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    /* Contenedor del constructor */
+    .feasy-editor #feasy-form-builder-container {
+        background: #ffffff;
+        border: 1px solid #dee3ea;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    /* Bloques de campos */
+    .feasy-editor .field-wrapper {
+        display: grid;
+        grid-template-columns: 36px repeat(5, minmax(150px, 1fr)) auto;
+        gap: 12px;
+        align-items: start;
+        padding: 18px 20px;
+        margin-bottom: 20px;
+        background: #fff;
+        border: 1px solid #dbe4ef;
+        border-left: 5px solid #0073aa;
+        border-radius: 8px;
+        transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+        box-shadow: 0 2px 6px rgba(17, 34, 68, 0.05);
+    }
+
+        .feasy-editor .field-wrapper:hover {
+            background: #f8fbff;
+            border-color: #c5d8ee;
+            box-shadow: 0 6px 16px rgba(17, 34, 68, 0.08);
+        }
+
+        /* Inputs y selects */
+        .feasy-editor .field-wrapper input,
+        .feasy-editor .field-wrapper select {
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background: #fdfdfd;
+        }
+
+            .feasy-editor .field-wrapper input:focus,
+            .feasy-editor .field-wrapper select:focus {
+                outline: none;
+                border-color: #0073aa;
+                box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.15);
+            }
+
+        .feasy-editor .field-wrapper .drag-handle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            padding: 4px;
+            border-radius: 4px;
+            background: transparent;
+            transition: background 0.2s ease, opacity 0.2s ease;
+            opacity: 0.75;
+        }
+
+            .feasy-editor .field-wrapper .drag-handle:hover {
+                opacity: 1;
+                background: rgba(0, 115, 170, 0.08);
+            }
+
+            .feasy-editor .field-wrapper .drag-handle img {
+                width: 16px;
+                height: 16px;
+                display: block;
+            }
+
+        .feasy-editor .field-wrapper .name-error {
+            grid-column: 2 / span 5;
+            margin-top: -4px;
+        }
+
+        .feasy-editor .field-wrapper .button-link-delete {
+            justify-self: end;
+        }
+
+    /* Campos con error */
+    .feasy-editor .field-name.error {
+        border-color: #e53935;
+        background: #fff0f0;
+    }
+
+    .feasy-editor .name-error {
+        color: #e53935;
+        font-size: 0.8rem;
+        margin-top: -5px;
+        display: block;
+        width: 100%;
+    }
+
+    /* Botones */
+
+    .feasy-editor .conditional-summary {
+        font-size: 0.85rem;
+        color: #555;
+        flex-basis: 100%;
+    }
+
+    .feasy-editor #feasy-add-field,
+    .feasy-editor #feasy-save-form-visual {
+        background: #0073aa;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        font-size: 1rem;
+        border-radius: 6px;
+        margin-top: 10px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+        .feasy-editor #feasy-add-field:hover,
+        .feasy-editor #feasy-save-form-visual:hover {
+            background: #005f8d;
+        }
+
+    .feasy-editor .button-link-delete {
+        background: #d63638;
+        color: #fff;
+        border: none;
+        padding: 8px 14px;
+        font-size: 0.9rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .feasy-editor .button-link-delete:hover {
+            background: #b32d2e;
+            transform: translateY(-1px);
+        }
+
+        .feasy-editor .button-link-delete img {
+            filter: brightness(0) invert(1);
+        }
+
+@media (max-width: 768px) {
+    .feasy-editor .field-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+        .feasy-editor .field-wrapper input,
+        .feasy-editor .field-wrapper select {
+            width: 100%;
+        }
+
+    .feasy-editor #feasy-add-field,
+    .feasy-editor #feasy-save-form-visual {
+        width: 100%;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+    .feasy-editor {
+        padding: 20px 10px;
+    }
+}
+
+/* ===============================
+   🧲 Soporte visual para SortableJS
+   =============================== */
+
+/* Elemento que estás arrastrando */
+.sortable-chosen {
+    background-color: #d0e6f7 !important;
+    opacity: 0.9;
+}
+
+/* Espacio ocupado mientras arrastras */
+.sortable-ghost {
+    background-color: #e9f4fb;
+    border: 2px dashed #0073aa;
+}
+
+/* pista de drag */
+.feasy-drag-hint {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 1em;
+}
+
+/* 🔁 Spinner reutilizable en overlays o secciones */
+.feasy-spinner-container {
+    text-align: center;
+    font-family: sans-serif;
+    color: #333;
+    padding: 3em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+    .feasy-spinner-container .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #ccc;
+        border-top: 4px solid #0073aa;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 10px;
+    }
+
+/* 🌀 Animación única */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.feasy-save-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 9999;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    font-family: sans-serif;
+}
+
+/* Opciones de campo (select, radio, checkbox_single) */
+.field-options {
+    width: 100%;
+    min-height: 40px;
+    resize: vertical;
+    padding: 2px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.5;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    background: #fff;
+    color: #333;
+    transition: border-color 0.3s ease;
+}
+
+/* Mejora presentación en pantallas grandes */
+@media (min-width: 768px) {
+    .field-options {
+        max-width: 320px;
+        margin-top: 0;
+    }
+}
+
+@media (max-width: 1180px) {
+    .feasy-editor {
+        padding: 32px 24px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .feasy-editor .field-wrapper {
+        grid-template-columns: 32px repeat(2, minmax(160px, 1fr)) auto;
+    }
+
+        .feasy-editor .field-wrapper .name-error {
+            grid-column: 2 / span 2;
+        }
+}
+
+@media (max-width: 782px) {
+    .feasy-editor {
+        padding: 24px 16px;
+    }
+
+        .feasy-editor .field-wrapper .name-error {
+            margin-top: 0;
+        }
+
+        .feasy-editor .field-wrapper .button-link-delete {
+            align-self: flex-end;
+        }
+}
+
+/* Opcional: enfoque visible */
+.field-options:focus {
+    border-color: #0073aa;
+    outline: none;
+}
+
+.feasy-new-form-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 1em;
+    padding-top: 0.5em;
+}
+
+    .feasy-new-form-group input {
+        padding: 6px 8px;
+        font-size: 14px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+
+    .feasy-new-form-group.hidden {
+        display: none !important;
+    }
+
+/* Historial de cambios */
+.feasy-history-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+    .feasy-history-modal.open {
+        display: flex;
+    }
+
+.feasy-history-inner {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    /*
+     * Make the modal responsive:
+     * - minimum width 280px so it fits on mobile
+     * - scale with viewport (90%)
+     * - cap width at 600px for large screens
+     */
+    width: clamp(280px, 90%, 600px);
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+    .feasy-history-inner ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .feasy-history-inner li {
+        padding: 6px 0;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+    }
+
+        .feasy-history-inner li:hover {
+            background: #f0f0f0;
+        }
+
+.feasy-history-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+/* Botones de historial: Undo, Redo, Historial */
+.feasy-history-controls button {
+    background: #0073aa;
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    font-size: 1rem;
+    border-radius: 6px;
+    margin-right: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+    .feasy-history-controls button:hover {
+        background: #005f8d;
+    }
+
+    /* Botón deshabilitado */
+    .feasy-history-controls button:disabled {
+        background-color: #ccc;
+        color: #666;
+        cursor: not-allowed;
+    }
+
+/* Botón Historial específico */
+#feasy-show-history {
+    background-color: #0073aa;
+}
+
+    #feasy-show-history:hover {
+        background-color: #005f8d;
+    }
+
+/* Modal para el constructor de lógica */
+.feasy-logic-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+    .feasy-logic-modal.open {
+        display: flex;
+    }
+
+.feasy-logic-inner {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: clamp(300px, 90%, 700px);
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+    .feasy-logic-inner .logic-rule {
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 6px;
+    }
+
+    .feasy-logic-inner .condition-row,
+    .feasy-logic-inner .action-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 6px;
+        align-items: center;
+    }
+
+.feasy-logic-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.feasy-debug-missing {
+    background: #fee;
+    color: #900;
+    padding: 5px 10px;
+    margin-bottom: 10px;
+    border: 1px solid #f99;
+    font-size: 14px;
+}
+
+.feasy-missing-field {
+    outline: 2px dashed red !important;
+}
+
+.feasy-toast {
+    position: fixed;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0073aa;
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    display: none;
+    z-index: 10000;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+    .feasy-toast button.feasy-toast-close {
+        background: transparent;
+        border: none;
+        color: inherit;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+/* Floating save button */
+#feasy-save-form-visual {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: none;
+}
+
+    #feasy-save-form-visual.feasy-visible {
+        display: block;
+    }
