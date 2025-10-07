@@ -360,7 +360,39 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     }
 
     $status_code = wp_remote_retrieve_response_code($response);
-    if ($status_code >= 400) {
+
+    $remote_json          = null;
+    $remote_json_error    = null;
+    $status_keys          = ['status', 'success', 'ok', 'result'];
+    $status_value         = null;
+    $normalized_status    = '';
+    $interpreted_status   = null;
+
+    if ($normalized_body !== '') {
+        $decoded = json_decode($normalized_body, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            $remote_json = $decoded;
+
+            foreach ($status_keys as $key) {
+                if (!array_key_exists($key, $remote_json)) {
+                    continue;
+                }
+
+                $status_value = $remote_json[$key];
+
+                if (is_string($status_value)) {
+                    $normalized_status = strtolower(trim($status_value));
+                }
+
+                $interpreted_status = feasy_interpret_remote_status($status_value);
+                break;
+            }
+        } else {
+            $remote_json_error = json_last_error_msg();
+        }
+    }
+
+    if ($status_code >= 400 && $interpreted_status !== true) {
         feasy_store_failed_submission($data);
         $remote_message = feasy_parse_remote_error_message($normalized_body);
         $fallback_msg   = sprintf('Error al enviar los datos. (HTTP %d)', $status_code);
@@ -382,6 +414,10 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
             $error_details['raw_body'] = feasy_trim_debug_value($normalized_body);
         }
 
+        if ($remote_json_error !== null) {
+            $error_details['json_error'] = $remote_json_error;
+        }
+
         wp_send_json_error([
             'message' => $error_message,
             'details' => $error_details,
@@ -389,23 +425,32 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
         wp_die();
     }
 
-    $status_code = wp_remote_retrieve_response_code($response);
-    if ($status_code >= 400) {
-        feasy_store_failed_submission($data);
-        error_log('Respuesta no exitosa al enviar datos: HTTP ' . $status_code);
-        $feasy_shutdown['sent'] = true;
-        header('Content-Type: application/json; charset=utf-8');
-        wp_send_json_error(['message' => 'Error al enviar los datos.']);
-        wp_die();
+    if ($status_code >= 400 && $interpreted_status === true) {
+        error_log(sprintf('[Feasy] Aviso: endpoint (%s) respondió HTTP %d pero indicó éxito.', $endpoint_url, $status_code));
     }
 
-    $remote_json = json_decode($normalized_body, true);
-
-    if (json_last_error() !== JSON_ERROR_NONE || !is_array($remote_json)) {
+    if (!is_array($remote_json)) {
         feasy_store_failed_submission($data);
         $feasy_shutdown['sent'] = true;
         header('Content-Type: application/json; charset=utf-8');
-        wp_send_json_error(['message' => 'Respuesta no válida del servidor']);
+
+        $payload = ['message' => 'Respuesta no válida del servidor'];
+        $details = [];
+
+        if ($normalized_body !== '') {
+            $details['endpoint'] = $endpoint_url;
+            $details['raw_body'] = feasy_trim_debug_value($normalized_body);
+        }
+
+        if ($remote_json_error !== null) {
+            $details['json_error'] = $remote_json_error;
+        }
+
+        if (!empty($details)) {
+            $payload['details'] = $details;
+        }
+
+        wp_send_json_error($payload);
         wp_die();
     }
 
@@ -417,64 +462,42 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
         $message = 'Datos agregados correctamente.';
     }
 
-    $status_keys   = ['status', 'success', 'ok', 'result'];
-    $status_found  = false;
-    $status_value  = null;
-    $normalized    = '';
+    if ($interpreted_status === true) {
+        $feasy_shutdown['sent'] = true;
 
-    foreach ($status_keys as $key) {
-        if (array_key_exists($key, $remote_json)) {
-            $status_value = $remote_json[$key];
-            $status_found = true;
+        $payload = [
+            'status'  => $normalized_status === '' ? 'success' : $normalized_status,
+            'message' => $message,
+        ];
 
-            if (is_string($status_value)) {
-                $normalized = strtolower(trim($status_value));
+        foreach (['data', 'payload', 'details'] as $extra_key) {
+            if (isset($remote_json[$extra_key])) {
+                $payload[$extra_key] = $remote_json[$extra_key];
             }
-
-            break;
         }
+
+        wp_send_json($payload);
     }
 
-    if ($status_found) {
-        $status_flag = feasy_interpret_remote_status($status_value);
+    if ($interpreted_status === false) {
+        feasy_store_failed_submission($data);
+        error_log('[Feasy] Error reportado por endpoint: ' . $message);
+        $feasy_shutdown['sent'] = true;
 
-        if ($status_flag === true) {
-            $feasy_shutdown['sent'] = true;
+        $payload = [
+            'status'  => $normalized_status === '' ? 'error' : $normalized_status,
+            'message' => $message ?: 'Error al enviar los datos.',
+        ];
 
-            $payload = [
-                'status'  => $normalized === '' ? 'success' : $normalized,
-                'message' => $message,
-            ];
-
-            foreach (['data', 'payload', 'details'] as $extra_key) {
-                if (isset($remote_json[$extra_key])) {
-                    $payload[$extra_key] = $remote_json[$extra_key];
-                }
-            }
-
-            wp_send_json($payload);
+        if (!empty($remote_json)) {
+            $payload['details'] = $remote_json;
         }
 
-        if ($status_flag === false) {
-            feasy_store_failed_submission($data);
-            error_log('[Feasy] Error reportado por endpoint: ' . $message);
-            $feasy_shutdown['sent'] = true;
+        wp_send_json($payload, 400);
+    }
 
-            $payload = [
-                'status'  => $normalized === '' ? 'error' : $normalized,
-                'message' => $message ?: 'Error al enviar los datos.',
-            ];
-
-            if (!empty($remote_json)) {
-                $payload['details'] = $remote_json;
-            }
-
-            wp_send_json($payload, 400);
-        }
-
-        if ($status_flag === null) {
-            error_log('[Feasy] Aviso: estado remoto no reconocido: ' . print_r($status_value, true));
-        }
+    if ($interpreted_status === null && $status_value !== null) {
+        error_log('[Feasy] Aviso: estado remoto no reconocido: ' . print_r($status_value, true));
     }
 
     $feasy_shutdown['sent'] = true;

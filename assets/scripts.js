@@ -338,10 +338,10 @@ function onReady(fn) {
 // Inicialización general en el DOM
 // —————————————————————————————————————————————
 onReady(() => {
-        console.log('✅ Feasy JS active — DOM cargado');
-        
-        // 📢 Inyectamos log para MutationObserver
-        console.log('👀 Feasy: configurando MutationObserver para formularios dinámicos');
+    console.log('✅ Feasy JS active — DOM cargado');
+
+    // 📢 Inyectamos log para MutationObserver
+    console.log('👀 Feasy: configurando MutationObserver para formularios dinámicos');
 
     let isSubmitting = false;
 
@@ -513,6 +513,73 @@ onReady(() => {
         if (nonceField) {
             fd.append('cangrejo_nonce', nonceField.value);
         }
+
+        const renderErrorPanel = (message, detailsList = []) => {
+            const detailLines = (Array.isArray(detailsList) ? detailsList : [detailsList])
+                .map(item => {
+                    if (item === null || item === undefined) return '';
+                    const text = typeof item === 'string' ? item : String(item);
+                    return text.trim();
+                })
+                .filter(Boolean);
+
+            sendingPanel.classList.add('error');
+            sendingPanel.innerHTML = '';
+
+            const icon = document.createElement('div');
+            icon.className = 'error-icon';
+            icon.setAttribute('aria-hidden', 'true');
+            icon.textContent = '✖';
+            sendingPanel.appendChild(icon);
+
+            const title = document.createElement('span');
+            title.className = 'loading-title error';
+            title.textContent = 'Error al enviar el formulario';
+            sendingPanel.appendChild(title);
+
+            const summary = document.createElement('div');
+            summary.className = 'form-info-summary';
+            summary.innerHTML = `
+                <span><strong>Form:</strong> ${formTitle}</span>
+                <span><strong>Submitted at:</strong> ${formattedDate}</span>
+            `;
+
+            const msg = document.createElement('span');
+            msg.className = 'error-message';
+            msg.textContent = message;
+            summary.appendChild(msg);
+
+            if (detailLines.length) {
+                const list = document.createElement('ul');
+                list.className = 'form-error-details';
+                detailLines.forEach(detail => {
+                    const li = document.createElement('li');
+                    li.textContent = detail;
+                    list.appendChild(li);
+                });
+                summary.appendChild(list);
+            }
+
+            sendingPanel.appendChild(summary);
+
+            const retryBtn = document.createElement('button');
+            retryBtn.type = 'button';
+            retryBtn.className = 'feasy-return-btn';
+            retryBtn.textContent = 'Volver al formulario';
+            retryBtn.addEventListener('click', () => {
+                sendingPanel.remove();
+                f.style.display = '';
+                const focusTarget = f.querySelector('[aria-invalid="true"], .has-error input, input, select, textarea');
+                if (focusTarget && typeof focusTarget.focus === 'function') {
+                    focusTarget.focus();
+                } else {
+                    f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+            sendingPanel.appendChild(retryBtn);
+
+            showToast(message, 12);
+        };
         fetch(f.getAttribute('action'), { method: 'POST', body: fd })
             .then(r => {
                 const ct = r.headers.get('content-type') || '';
@@ -572,9 +639,60 @@ onReady(() => {
                         || data?.message
                         || data?.status
                         || 'Submission error';
-                    if (details) {
-                        errorMessage = `${errorMessage} (${details})`;
+
+                    const normalizeDetailValue = value => {
+                        if (value === null || value === undefined) return '';
+                        if (typeof value === 'string') return value.trim();
+                        if (typeof value === 'number' || typeof value === 'boolean') {
+                            return String(value);
+                        }
+                        if (Array.isArray(value)) {
+                            return value
+                                .map(item => normalizeDetailValue(item))
+                                .filter(Boolean)
+                                .join(', ');
+                        }
+                        if (typeof value === 'object') {
+                            const nested = Object.entries(value)
+                                .map(([key, val]) => {
+                                    const normalized = normalizeDetailValue(val);
+                                    if (!normalized) return '';
+                                    return `${key.replace(/_/g, ' ')}: ${normalized}`;
+                                })
+                                .filter(Boolean)
+                                .join(' | ');
+                            return nested || JSON.stringify(value);
+                        }
+                        return String(value);
+                    };
+
+                    const detailLines = [];
+                    const pushDetail = (label, value) => {
+                        const normalized = normalizeDetailValue(value);
+                        if (!normalized) return;
+                        if (label) {
+                            detailLines.push(`${label}: ${normalized}`);
+                        } else {
+                            detailLines.push(normalized);
+                        }
+                    };
+
+                    if (typeof details === 'string') {
+                        pushDetail('', details);
+                    } else if (Array.isArray(details)) {
+                        details.forEach(item => {
+                            if (typeof item === 'string') {
+                                pushDetail('', item);
+                            } else if (item && typeof item === 'object') {
+                                Object.entries(item).forEach(([key, val]) => pushDetail(key.replace(/_/g, ' '), val));
+                            } else if (item !== null && item !== undefined) {
+                                pushDetail('', item);
+                            }
+                        });
+                    } else if (details && typeof details === 'object') {
+                        Object.entries(details).forEach(([key, val]) => pushDetail(key.replace(/_/g, ' '), val));
                     }
+
                     console.groupCollapsed('🛑 Feasy form submission failure');
                     console.error('Submission error summary:', {
                         form: formTitle,
@@ -592,9 +710,7 @@ onReady(() => {
                         });
                     }
                     console.groupEnd();
-                    sendingPanel.querySelector('.error-placeholder')
-                        .textContent = errorMessage;
-                    f.style.display = '';
+                    renderErrorPanel(errorMessage, detailLines);
                 }
             })
             .catch(err => {
@@ -607,9 +723,7 @@ onReady(() => {
                     formData: debugFormData
                 });
                 console.groupEnd();
-                sendingPanel.querySelector('.error-placeholder')
-                    .textContent = 'Unexpected error';
-                f.style.display = '';
+                renderErrorPanel('Ocurrió un error inesperado.', [err?.message || err]);
             })
             .finally(() => {
                 isSubmitting = false;
