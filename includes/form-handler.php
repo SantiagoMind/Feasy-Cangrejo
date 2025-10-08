@@ -351,8 +351,9 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
             $payload['details']['error_codes'] = $error_codes;
         }
 
-        if (!empty($normalized_body)) {
+        if (is_string($normalized_body) && $normalized_body !== '') {
             $payload['details']['raw_body'] = feasy_trim_debug_value($normalized_body);
+            $payload['details']['raw_body_full'] = $normalized_body;
         }
 
         wp_send_json_error($payload);
@@ -410,8 +411,9 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
             'http_status' => $status_code,
         ];
 
-        if ($normalized_body !== '') {
+        if (is_string($normalized_body) && $normalized_body !== '') {
             $error_details['raw_body'] = feasy_trim_debug_value($normalized_body);
+            $error_details['raw_body_full'] = $normalized_body;
         }
 
         if ($remote_json_error !== null) {
@@ -437,9 +439,10 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
         $payload = ['message' => 'Respuesta no válida del servidor'];
         $details = [];
 
-        if ($normalized_body !== '') {
+        if (is_string($normalized_body) && $normalized_body !== '') {
             $details['endpoint'] = $endpoint_url;
             $details['raw_body'] = feasy_trim_debug_value($normalized_body);
+            $details['raw_body_full'] = $normalized_body;
         }
 
         if ($remote_json_error !== null) {

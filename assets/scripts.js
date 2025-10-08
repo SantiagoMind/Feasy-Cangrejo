@@ -581,20 +581,25 @@ onReady(() => {
             showToast(message, 12);
         };
         fetch(f.getAttribute('action'), { method: 'POST', body: fd })
-            .then(r => {
-                const ct = r.headers.get('content-type') || '';
-                if (!ct.includes('application/json')) {
-                    return Promise.reject('Invalid content type');
+            .then(r => r.text().then(raw => {
+                console.log('📨 Respuesta de Google Apps Script:', raw);
+                let data = null;
+                if (raw) {
+                    try {
+                        data = JSON.parse(raw);
+                    } catch (parseErr) {
+                        console.warn('Feasy form submission: respuesta no es JSON válido', parseErr);
+                    }
                 }
-                return r.json().then(data => ({ data, ok: r.ok }));
-            })
-            .then(({ data, ok }) => {
+                return { data, raw, ok: r.ok, status: r.status };
+            }))
+            .then(({ data, raw, ok, status }) => {
                 const successFlag = data?.success === true
                     || data?.status === 'success'
                     || (ok && data && !('success' in data) && !('status' in data));
 
-                const status = data?.status ?? (successFlag ? 'success' : null);
-                const isTimeout = status === 'timeout';
+                const statusValue = data?.status ?? (successFlag ? 'success' : status);
+                const isTimeout = statusValue === 'timeout';
 
                 if (successFlag || isTimeout) {
                     f.reset();
