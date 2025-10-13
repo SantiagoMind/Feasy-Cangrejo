@@ -386,6 +386,13 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
                 }
 
                 $interpreted_status = feasy_interpret_remote_status($status_value);
+
+                // Si no pudimos interpretar el estado con esta clave,
+                // intentamos con la siguiente disponible (por ejemplo, "success" o "ok").
+                if ($interpreted_status === null) {
+                    continue;
+                }
+
                 break;
             }
         } else {

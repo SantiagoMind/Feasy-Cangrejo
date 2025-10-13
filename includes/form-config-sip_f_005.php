@@ -3,7 +3,7 @@
 return [
     'title'     => 'QC Inspection Checks Personal Hygiene',
     'form_name' => 'QC Inspection Checks Personal Hygiene',
-    'endpoint'  => 'https://script.google.com/macros/s/AKfycby3UpffgoH4R01TBJ0zYwIt--SvXUk_4JDj1UPV2ReDWAOMgNYMj-scO4P48THl_5UOuA/exec',
+    'endpoint'  => 'https://script.google.com/a/macros/mindandcreation.tech/s/AKfycbzB6un6lGbd_abp2K70R_GGqwURuuLQufCTmRX9iyhe3Rc79FUyKEukcyPqneJ1lqm7/exec',
 
     'fields' => [
         [
