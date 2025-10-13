@@ -27,6 +27,45 @@ function feasy_generate_auth_token($secret) {
     return $timestamp . ':' . $signature;
 }
 
+if (!function_exists('feasy_normalize_apps_script_endpoint')) {
+    function feasy_normalize_apps_script_endpoint($url) {
+        if (!is_string($url)) {
+            return $url;
+        }
+
+        $trimmed = trim($url);
+        if ($trimmed === '') {
+            return $trimmed;
+        }
+
+        $parsed = wp_parse_url($trimmed);
+        if ($parsed === false || !isset($parsed['host'])) {
+            return $trimmed;
+        }
+
+        if (strtolower($parsed['host']) !== 'script.google.com' || empty($parsed['path'])) {
+            return $trimmed;
+        }
+
+        $new_path = preg_replace('#^/a/macros/[^/]+/(.+)$#', '/macros/$1', $parsed['path'], 1, $replaced);
+        if (empty($replaced)) {
+            return $trimmed;
+        }
+
+        $normalized = 'https://script.google.com' . $new_path;
+
+        if (!empty($parsed['query'])) {
+            $normalized .= '?' . $parsed['query'];
+        }
+
+        if (!empty($parsed['fragment'])) {
+            $normalized .= '#' . $parsed['fragment'];
+        }
+
+        return $normalized;
+    }
+}
+
 /**
  * Interpreta valores devueltos por Apps Script (u otros endpoints) como bandera de éxito.
  *
@@ -220,6 +259,28 @@ if (!function_exists('feasy_parse_remote_error_message')) {
     }
 }
 
+if (!function_exists('feasy_detect_apps_script_error_html')) {
+    function feasy_detect_apps_script_error_html($body) {
+        if (!is_string($body) || $body === '') {
+            return false;
+        }
+
+        $markers = [
+            'Error 400 (Bad Request)!!1',
+            'Your client has issued a malformed or illegal request.',
+            'www.google.com/images/errors/robot.png',
+        ];
+
+        foreach ($markers as $marker) {
+            if (strpos($body, $marker) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
 /**
  * Función para procesar el envío del formulario y enviarlo a un endpoint de Google Apps Script.
  * Este handler trabaja exclusivamente con AJAX (admin-ajax.php).
@@ -271,6 +332,11 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
 
     // Obtener el endpoint dinámico desde el formulario enviado
     $endpoint_url = isset($_POST['_endpoint_url']) ? esc_url_raw($_POST['_endpoint_url']) : '';
+    $normalized_endpoint = feasy_normalize_apps_script_endpoint($endpoint_url);
+    if ($normalized_endpoint !== $endpoint_url) {
+        error_log(sprintf('[Feasy] Endpoint normalizado de %s a %s para evitar redirecciones de dominio.', $endpoint_url, $normalized_endpoint));
+        $endpoint_url = $normalized_endpoint;
+    }
 
     // Validar que exista el endpoint
     if (empty($endpoint_url)) {
@@ -401,6 +467,20 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     }
 
     if ($status_code >= 400 && $interpreted_status !== true) {
+        if (feasy_detect_apps_script_error_html($normalized_body)) {
+            error_log(sprintf('[Feasy] Aviso: endpoint (%s) respondió con HTML de error genérico (HTTP %d). Se informará como timeout.', $endpoint_url, $status_code));
+
+            $feasy_shutdown['sent'] = true;
+
+            $details = sprintf('Google Apps Script devolvió HTTP %d con un mensaje genérico. Verifica la hoja de cálculo para confirmar el registro.', $status_code);
+
+            wp_send_json_success([
+                'status'  => 'timeout',
+                'message' => 'El formulario se envió, pero el endpoint devolvió una respuesta inesperada.',
+                'details' => $details,
+            ]);
+        }
+
         feasy_store_failed_submission($data);
         $remote_message = feasy_parse_remote_error_message($normalized_body);
         $fallback_msg   = sprintf('Error al enviar los datos. (HTTP %d)', $status_code);
