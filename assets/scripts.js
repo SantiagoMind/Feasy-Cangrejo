@@ -600,13 +600,20 @@ onReady(() => {
 
                 const statusValue = data?.status ?? (successFlag ? 'success' : status);
                 const isTimeout = statusValue === 'timeout';
+                const severity = data?.severity ?? (isTimeout ? 'warning' : 'success');
+                const isWarning = severity === 'warning';
+                const warningText = data?.warning
+                    ?? (isTimeout ? data?.details : null)
+                    ?? (isWarning ? data?.details : null);
 
-                if (successFlag || isTimeout) {
+                if (successFlag || isTimeout || isWarning) {
                     f.reset();
-                    const titleText = isTimeout
-                        ? 'Form submitted (slow response)'
-                        : 'Form submitted successfully';
-                    const titleClass = isTimeout ? 'warning' : 'success';
+                    const titleText = isWarning
+                        ? 'Form submitted with warnings'
+                        : isTimeout
+                            ? 'Form submitted (slow response)'
+                            : 'Form submitted successfully';
+                    const titleClass = isWarning || isTimeout ? 'warning' : 'success';
                     sendingPanel.innerHTML = `
                         <div class="checkmark-container">
                             <svg class="checkmark" viewBox="0 0 52 52">
@@ -628,14 +635,22 @@ onReady(() => {
                             summary.appendChild(msg);
                         }
                     }
-                    if (isTimeout && data?.details) {
+                    if (warningText) {
                         const summary = sendingPanel.querySelector('.form-info-summary');
                         if (summary) {
                             const warn = document.createElement('span');
                             warn.className = 'timeout-details';
-                            warn.textContent = data.details;
+                            warn.textContent = warningText;
                             summary.appendChild(warn);
                         }
+                        console.warn('Feasy form submission completed with warnings:', {
+                            form: formTitle,
+                            submittedAt: formattedDate,
+                            endpoint: f.getAttribute('action'),
+                            warning: warningText,
+                            rawResponse: raw,
+                            status,
+                        });
                     }
                     sendingPanel.style.pointerEvents = 'none';
                 } else {
