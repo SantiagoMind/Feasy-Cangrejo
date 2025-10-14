@@ -1,4 +1,4 @@
-﻿// assets/scripts.js
+// assets/scripts.js
 
 // —————————————————————————————————————————————
 // Función para inicializar lógicas condicionales y de cálculo
@@ -594,17 +594,20 @@ onReady(() => {
                 return { data, raw, ok: r.ok, status: r.status };
             }))
             .then(({ data, raw, ok, status }) => {
-                const successFlag = data?.success === true
-                    || data?.status === 'success'
-                    || (ok && data && !('success' in data) && !('status' in data));
+                const wpWrapped = data && typeof data.success === 'boolean' && data.hasOwnProperty('data') && typeof data.data === 'object';
+                const payload = wpWrapped ? data.data : data;
 
-                const statusValue = data?.status ?? (successFlag ? 'success' : status);
+                const successFlag = (wpWrapped ? data.success === true : false)
+                    || payload?.status === 'success'
+                    || (ok && payload && !('success' in payload) && !('status' in payload));
+
+                const statusValue = payload?.status ?? (successFlag ? 'success' : status);
                 const isTimeout = statusValue === 'timeout';
-                const severity = data?.severity ?? (isTimeout ? 'warning' : 'success');
+                const severity = payload?.severity ?? (isTimeout ? 'warning' : 'success');
                 const isWarning = severity === 'warning';
-                const warningText = data?.warning
-                    ?? (isTimeout ? data?.details : null)
-                    ?? (isWarning ? data?.details : null);
+                const warningText = payload?.warning
+                    ?? (isTimeout ? payload?.details : null)
+                    ?? (isWarning ? payload?.details : null);
 
                 if (successFlag || isTimeout || isWarning) {
                     f.reset();
@@ -627,11 +630,11 @@ onReady(() => {
                             <span><strong>Submitted at:</strong> ${formattedDate}</span>
                         </div>
                     `;
-                    if (data?.message) {
+                    if (payload?.message) {
                         const summary = sendingPanel.querySelector('.form-info-summary');
                         if (summary) {
                             const msg = document.createElement('span');
-                            msg.textContent = data.message;
+                            msg.textContent = payload.message;
                             summary.appendChild(msg);
                         }
                     }

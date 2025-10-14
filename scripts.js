@@ -1,4 +1,4 @@
-﻿// assets/scripts.js
+// assets/scripts.js
 
 // —————————————————————————————————————————————
 // Función para inicializar lógicas condicionales y de cálculo
@@ -522,11 +522,14 @@ onReady(() => {
                 return r.json().then(data => ({ data, ok: r.ok }));
             })
             .then(({ data, ok }) => {
-                const successFlag = data?.success === true
-                    || data?.status === 'success'
-                    || (ok && data && !('success' in data) && !('status' in data));
+                const wpWrapped = data && typeof data.success === 'boolean' && data.hasOwnProperty('data') && typeof data.data === 'object';
+                const payload = wpWrapped ? data.data : data;
 
-                const status = data?.status ?? (successFlag ? 'success' : null);
+                const successFlag = (wpWrapped ? data.success === true : false)
+                    || payload?.status === 'success'
+                    || (ok && payload && !('success' in payload) && !('status' in payload));
+
+                const status = payload?.status ?? (successFlag ? 'success' : null);
                 const isTimeout = status === 'timeout';
 
                 if (successFlag || isTimeout) {
@@ -548,29 +551,29 @@ onReady(() => {
                             <span><strong>Submitted at:</strong> ${formattedDate}</span>
                         </div>
                     `;
-                    if (data?.message) {
+                    if (payload?.message) {
                         const summary = sendingPanel.querySelector('.form-info-summary');
                         if (summary) {
                             const msg = document.createElement('span');
-                            msg.textContent = data.message;
+                            msg.textContent = payload.message;
                             summary.appendChild(msg);
                         }
                     }
-                    if (isTimeout && data?.details) {
+                    if (isTimeout && payload?.details) {
                         const summary = sendingPanel.querySelector('.form-info-summary');
                         if (summary) {
                             const warn = document.createElement('span');
                             warn.className = 'timeout-details';
-                            warn.textContent = data.details;
+                            warn.textContent = payload.details;
                             summary.appendChild(warn);
                         }
                     }
                     sendingPanel.style.pointerEvents = 'none';
                 } else {
-                    const details = data?.data?.details;
-                    let errorMessage = data?.data?.message
-                        || data?.message
-                        || data?.status
+                    const details = payload?.data?.details;
+                    let errorMessage = payload?.data?.message
+                        || payload?.message
+                        || payload?.status
                         || 'Submission error';
                     if (details) {
                         errorMessage = `${errorMessage} (${details})`;
