@@ -468,16 +468,32 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
 
     if ($status_code >= 400 && $interpreted_status !== true) {
         if (feasy_detect_apps_script_error_html($normalized_body)) {
-            error_log(sprintf('[Feasy] Aviso: endpoint (%s) respondió con HTML de error genérico (HTTP %d). Se informará como timeout.', $endpoint_url, $status_code));
+            $status_text = wp_remote_retrieve_response_message($response);
+            $body_snippet = feasy_trim_debug_value($normalized_body);
+
+            error_log(sprintf('[Feasy] Aviso: endpoint (%s) respondió con HTML de error genérico (HTTP %d %s). Fragmento: %s', $endpoint_url, $status_code, $status_text, $body_snippet));
 
             $feasy_shutdown['sent'] = true;
 
             $details = sprintf('Google Apps Script devolvió HTTP %d con un mensaje genérico. Verifica la hoja de cálculo para confirmar el registro.', $status_code);
 
+            $debug_details = [
+                'httpCode'   => $status_code,
+                'statusText' => $status_text,
+            ];
+
+            if ($body_snippet !== '') {
+                $debug_details['rawBodySnippet'] = $body_snippet;
+            }
+
             wp_send_json_success([
-                'status'  => 'timeout',
-                'message' => 'El formulario se envió, pero el endpoint devolvió una respuesta inesperada.',
-                'details' => $details,
+                'status'   => 'success',
+                'message'  => 'Datos enviados correctamente, pero Google Apps Script respondió con un mensaje genérico.',
+                'warning'  => $details,
+                'details'  => $details,
+                'severity' => 'warning',
+                'httpCode' => $status_code,
+                'debug'    => $debug_details,
             ]);
         }
 
