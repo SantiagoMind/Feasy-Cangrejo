@@ -126,14 +126,23 @@ function feasy_normalize_remote_body($body) {
 /**
  * Almacena los datos del formulario que no pudieron enviarse.
  */
-function feasy_store_failed_submission($data) {
+function feasy_store_failed_submission($data, $context = []) {
     $dir = plugin_dir_path(__FILE__) . '../failed-submissions';
     if (!is_dir($dir)) {
         wp_mkdir_p($dir);
     }
 
     $file = sprintf('%s/submission_%s.json', $dir, time() . '_' . uniqid());
-    file_put_contents($file, feasy_wp_json_encode($data));
+    $payload = [
+        'timestamp' => gmdate('c'),
+        'data'      => $data,
+    ];
+
+    if (!empty($context)) {
+        $payload['context'] = $context;
+    }
+
+    file_put_contents($file, feasy_wp_json_encode($payload));
 
     error_log('[Feasy] Datos de envío guardados en: ' . $file);
 }
@@ -161,6 +170,22 @@ function feasy_is_timeout_error($error) {
     }
 
     return false;
+}
+
+if (!function_exists('feasy_calculate_duration_ms')) {
+    function feasy_calculate_duration_ms($start)
+    {
+        if (!is_numeric($start)) {
+            return null;
+        }
+
+        $elapsed = microtime(true) - $start;
+        if (!is_finite($elapsed) || $elapsed < 0) {
+            return null;
+        }
+
+        return (int) round($elapsed * 1000);
+    }
 }
 
 /**
@@ -298,6 +323,14 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
 
     // Recopilar y sanitizar los datos enviados
     $data = [];
+    $request_id = uniqid('feasy_req_', true);
+    $request_started_at = microtime(true);
+    $request_context = [
+        'request_id' => $request_id,
+        'started_at' => gmdate('c'),
+    ];
+
+    error_log(sprintf('[Feasy][%s] Inicio de procesamiento de envío AJAX.', $request_id));
 
     foreach ($_POST as $key => $value) {
         if (in_array($key, ['action', '_endpoint_url', 'cangrejo_nonce'])) continue;
@@ -319,13 +352,31 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
      * Si la ejecución termina inesperadamente y la bandera "sent" permanece en falso,
      * los datos sanitizados se almacenarán localmente.
      */
-    $feasy_shutdown = ['sent' => false, 'data' => &$data];
+    $feasy_shutdown = [
+        'sent'       => false,
+        'data'       => &$data,
+        'request_id' => $request_id,
+        'context'    => &$request_context,
+        'started_at' => $request_started_at,
+    ];
     register_shutdown_function(function () use (&$feasy_shutdown) {
         if (!$feasy_shutdown['sent']) {
             $error = error_get_last();
             if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-                feasy_store_failed_submission($feasy_shutdown['data']);
-                error_log('[Feasy] Respaldo por error fatal: ' . $error['message']);
+                $context = $feasy_shutdown['context'];
+                $context['reason'] = 'shutdown_fatal';
+                $context['shutdown_error_type'] = $error['type'];
+                $context['shutdown_error_message'] = $error['message'];
+
+                if (isset($feasy_shutdown['started_at'])) {
+                    $duration = feasy_calculate_duration_ms($feasy_shutdown['started_at']);
+                    if ($duration !== null) {
+                        $context['duration_ms'] = $duration;
+                    }
+                }
+
+                feasy_store_failed_submission($feasy_shutdown['data'], $context);
+                error_log(sprintf('[Feasy][%s] Respaldo por error fatal: %s', $feasy_shutdown['request_id'], $error['message']));
             }
         }
     });
@@ -334,21 +385,34 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     $endpoint_url = isset($_POST['_endpoint_url']) ? esc_url_raw($_POST['_endpoint_url']) : '';
     $normalized_endpoint = feasy_normalize_apps_script_endpoint($endpoint_url);
     if ($normalized_endpoint !== $endpoint_url) {
-        error_log(sprintf('[Feasy] Endpoint normalizado de %s a %s para evitar redirecciones de dominio.', $endpoint_url, $normalized_endpoint));
+        error_log(sprintf('[Feasy][%s] Endpoint normalizado de %s a %s para evitar redirecciones de dominio.', $request_id, $endpoint_url, $normalized_endpoint));
         $endpoint_url = $normalized_endpoint;
+    }
+
+    if ($endpoint_url !== '') {
+        $request_context['endpoint'] = $endpoint_url;
     }
 
     // Validar que exista el endpoint
     if (empty($endpoint_url)) {
-        feasy_store_failed_submission($data);
-        error_log('[Feasy] Endpoint no proporcionado, datos almacenados.');
+        $context = array_merge($request_context, [
+            'reason' => 'missing_endpoint',
+        ]);
+
+        $duration = feasy_calculate_duration_ms($request_started_at);
+        if ($duration !== null) {
+            $context['duration_ms'] = $duration;
+        }
+
+        feasy_store_failed_submission($data, $context);
+        error_log(sprintf('[Feasy][%s] Endpoint no proporcionado, datos almacenados.', $request_id));
         $feasy_shutdown['sent'] = true;
         header('Content-Type: application/json; charset=utf-8');
         wp_send_json_error(['message' => 'Endpoint no proporcionado']);
         wp_die();
     }
 
-     // Preparar cuerpo y firma HMAC para asegurar la integridad de los datos
+    // Preparar cuerpo y firma HMAC para asegurar la integridad de los datos
     $headers = ['Content-Type' => 'application/json; charset=utf-8'];
     $secret  = feasy_get_hmac_secret();
 
@@ -392,12 +456,27 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     $normalized_body = feasy_normalize_remote_body($response_body);
 
      if (is_wp_error($response)) {
-        feasy_store_failed_submission($data);
-
         $error_codes = $response->get_error_codes();
         $error_message = $response->get_error_message();
-        $log_context  = sprintf('[Feasy] Error al enviar datos al endpoint (%s): %s', $endpoint_url, $error_message);
+        $log_context  = sprintf('[Feasy][%s] Error al enviar datos al endpoint (%s): %s', $request_id, $endpoint_url, $error_message);
         error_log($log_context);
+
+        $context = array_merge($request_context, [
+            'reason'        => 'wp_error',
+            'error_codes'   => $error_codes,
+            'error_message' => $error_message,
+        ]);
+
+        $duration = feasy_calculate_duration_ms($request_started_at);
+        if ($duration !== null) {
+            $context['duration_ms'] = $duration;
+        }
+
+        if (is_string($normalized_body) && $normalized_body !== '') {
+            $context['remote_body_snippet'] = feasy_trim_debug_value($normalized_body);
+        }
+
+        feasy_store_failed_submission($data, $context);
 
         if (!empty($error_codes)) {
             error_log('[Feasy] Códigos de error: ' . implode(', ', $error_codes));
@@ -427,6 +506,9 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     }
 
     $status_code = wp_remote_retrieve_response_code($response);
+    if ($status_code) {
+        $request_context['http_status'] = $status_code;
+    }
 
     $remote_json          = null;
     $remote_json_error    = null;
@@ -468,11 +550,29 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
 
     if ($status_code >= 400 && $interpreted_status !== true) {
         if (feasy_detect_apps_script_error_html($normalized_body)) {
-            error_log(sprintf('[Feasy] Aviso: endpoint (%s) respondió con HTML de error genérico (HTTP %d). Se tratará como éxito con advertencia.', $endpoint_url, $status_code));
+            $status_text = wp_remote_retrieve_response_message($response);
+            $body_snippet = feasy_trim_debug_value($normalized_body);
+
+            error_log(sprintf('[Feasy][%s] Aviso: endpoint (%s) respondió con HTML de error genérico (HTTP %d %s). Fragmento: %s', $request_id, $endpoint_url, $status_code, $status_text, $body_snippet));
 
             $feasy_shutdown['sent'] = true;
 
             $details = sprintf('Google Apps Script devolvió HTTP %d con un mensaje genérico. Verifica la hoja de cálculo para confirmar el registro.', $status_code);
+
+            $debug_details = [
+                'httpCode'   => $status_code,
+                'statusText' => $status_text,
+                'requestId'  => $request_id,
+            ];
+
+            if ($body_snippet !== '') {
+                $debug_details['rawBodySnippet'] = $body_snippet;
+            }
+
+            $duration = feasy_calculate_duration_ms($request_started_at);
+            if ($duration !== null) {
+                $debug_details['durationMs'] = $duration;
+            }
 
             wp_send_json_success([
                 'status'   => 'success',
@@ -481,17 +581,32 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
                 'details'  => $details,
                 'severity' => 'warning',
                 'httpCode' => $status_code,
+                'debug'    => $debug_details,
             ]);
         }
 
-        feasy_store_failed_submission($data);
+        $duration = feasy_calculate_duration_ms($request_started_at);
+        $context = array_merge($request_context, [
+            'reason'      => 'http_error',
+            'http_status' => $status_code,
+        ]);
+
+        if ($duration !== null) {
+            $context['duration_ms'] = $duration;
+        }
+
+        if (is_string($normalized_body) && $normalized_body !== '') {
+            $context['remote_body_snippet'] = feasy_trim_debug_value($normalized_body);
+        }
+
+        feasy_store_failed_submission($data, $context);
         $remote_message = feasy_parse_remote_error_message($normalized_body);
         $fallback_msg   = sprintf('Error al enviar los datos. (HTTP %d)', $status_code);
         $error_message  = $remote_message !== '' ? $remote_message : $fallback_msg;
 
-        error_log(sprintf('[Feasy] Respuesta no exitosa del endpoint (%s): HTTP %d. Mensaje: %s', $endpoint_url, $status_code, feasy_trim_debug_value($error_message)));
+        error_log(sprintf('[Feasy][%s] Respuesta no exitosa del endpoint (%s): HTTP %d. Mensaje: %s', $request_id, $endpoint_url, $status_code, feasy_trim_debug_value($error_message)));
         if ($normalized_body !== '') {
-            error_log('[Feasy] Cuerpo devuelto: ' . feasy_trim_debug_value($normalized_body));
+            error_log(sprintf('[Feasy][%s] Cuerpo devuelto: %s', $request_id, feasy_trim_debug_value($normalized_body)));
         }
 
         $feasy_shutdown['sent'] = true;
@@ -518,11 +633,26 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     }
 
     if ($status_code >= 400 && $interpreted_status === true) {
-        error_log(sprintf('[Feasy] Aviso: endpoint (%s) respondió HTTP %d pero indicó éxito.', $endpoint_url, $status_code));
+        error_log(sprintf('[Feasy][%s] Aviso: endpoint (%s) respondió HTTP %d pero indicó éxito.', $request_id, $endpoint_url, $status_code));
     }
 
     if (!is_array($remote_json)) {
-        feasy_store_failed_submission($data);
+        $duration = feasy_calculate_duration_ms($request_started_at);
+        $context = array_merge($request_context, [
+            'reason'      => 'invalid_response',
+            'http_status' => $status_code,
+        ]);
+
+        if ($duration !== null) {
+            $context['duration_ms'] = $duration;
+        }
+
+        if (is_string($normalized_body) && $normalized_body !== '') {
+            $context['remote_body_snippet'] = feasy_trim_debug_value($normalized_body);
+        }
+
+        feasy_store_failed_submission($data, $context);
+        error_log(sprintf('[Feasy][%s] Respuesta no válida del servidor: no se pudo decodificar JSON.', $request_id));
         $feasy_shutdown['sent'] = true;
         header('Content-Type: application/json; charset=utf-8');
 
@@ -569,12 +699,35 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
             }
         }
 
+        $duration = feasy_calculate_duration_ms($request_started_at);
+        $payload['debug'] = [
+            'requestId' => $request_id,
+        ];
+
+        if ($duration !== null) {
+            $payload['debug']['durationMs'] = $duration;
+        }
+
         wp_send_json($payload);
     }
 
     if ($interpreted_status === false) {
-        feasy_store_failed_submission($data);
-        error_log('[Feasy] Error reportado por endpoint: ' . $message);
+        $duration = feasy_calculate_duration_ms($request_started_at);
+        $context = array_merge($request_context, [
+            'reason'      => 'remote_reported_error',
+            'http_status' => $status_code,
+        ]);
+
+        if ($duration !== null) {
+            $context['duration_ms'] = $duration;
+        }
+
+        if (is_string($normalized_body) && $normalized_body !== '') {
+            $context['remote_body_snippet'] = feasy_trim_debug_value($normalized_body);
+        }
+
+        feasy_store_failed_submission($data, $context);
+        error_log(sprintf('[Feasy][%s] Error reportado por endpoint: %s', $request_id, $message));
         $feasy_shutdown['sent'] = true;
 
         $payload = [
@@ -590,14 +743,24 @@ function proyecto_cangrejo_handle_form_submission_ajax() {
     }
 
     if ($interpreted_status === null && $status_value !== null) {
-        error_log('[Feasy] Aviso: estado remoto no reconocido: ' . print_r($status_value, true));
+        error_log(sprintf('[Feasy][%s] Aviso: estado remoto no reconocido: %s', $request_id, print_r($status_value, true)));
     }
 
     $feasy_shutdown['sent'] = true;
-    wp_send_json_success([
+    $duration = feasy_calculate_duration_ms($request_started_at);
+    $success_payload = [
         'status'  => 'success',
         'message' => $message,
-    ]);
+        'debug'   => [
+            'requestId' => $request_id,
+        ],
+    ];
+
+    if ($duration !== null) {
+        $success_payload['debug']['durationMs'] = $duration;
+    }
+
+    wp_send_json_success($success_payload);
 }
 
 // Registrar la acción AJAX (logueados y no logueados)
